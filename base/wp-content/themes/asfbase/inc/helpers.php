@@ -79,3 +79,34 @@ function asfbase_case_image( string $slug, string $size = 'large' ): string {
 	}
 	return get_the_post_thumbnail( $case, $size, array( 'alt' => '', 'loading' => 'eager', 'decoding' => 'async' ) );
 }
+
+/**
+ * An <img> for a Media Library URL given as a block attribute (e.g. "image":"{{media:file.jpg}}",
+ * which the seed turns into a site-relative URL of the large size). When the URL is an attachment or
+ * one of its sizes, WordPress adds width/height (no layout shift) and srcset, as it does for image
+ * blocks. A file in uploads that isn't an attachment gets its width/height from the file; any other
+ * URL is printed as it is.
+ *
+ * @param string $url   Image URL, absolute or site-relative.
+ * @param string $attrs Extra attributes, already escaped (e.g. 'fetchpriority="high"').
+ */
+function asfbase_media_img( string $url, string $attrs = '' ): string {
+	$tag  = '<img src="' . esc_url( $url ) . '" alt=""' . ( $attrs ? ' ' . $attrs : '' ) . '>';
+	$up   = wp_get_upload_dir();
+	$base = (string) set_url_scheme( $up['baseurl'], 'relative' ); // e.g. /wp-content/uploads
+	$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+	if ( ! str_starts_with( $path, $base . '/' ) ) {
+		return $tag;
+	}
+	$file = substr( $path, strlen( $base ) + 1 ); // e.g. 2026/11/photo-1024x768.jpg
+	$orig = (string) preg_replace( '/-\d+x\d+(?=\.\w+$)/', '', $file ); // The size's original…
+	foreach ( array_unique( array( $file, $orig, (string) preg_replace( '/(\.\w+)$/', '-scaled$1', $orig ) ) ) as $candidate ) { // …which WordPress may have scaled down.
+		$id = attachment_url_to_postid( $up['baseurl'] . '/' . $candidate );
+		if ( $id ) {
+			$tag = wp_img_tag_add_width_and_height_attr( $tag, 'asfbase', $id );
+			return wp_img_tag_add_srcset_and_sizes_attr( $tag, 'asfbase', $id );
+		}
+	}
+	$size = wp_getimagesize( $up['basedir'] . '/' . $file );
+	return $size ? str_replace( '<img ', sprintf( '<img width="%d" height="%d" ', $size[0], $size[1] ), $tag ) : $tag;
+}

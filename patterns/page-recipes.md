@@ -15,14 +15,14 @@ Each recipe was used on a real project. Recipes set the **story order**, not the
 | 4 | Voices | `hm-testimonials` | 3 client quotes, proof clause in bold |
 | 5 | The contrast | `hm-head` + `hm-bento` | "Most agencies… We…" + service tiles with UI mocks |
 | 6 | Method | `hm-bone` + `hm-steps` | 4 steps, one line each → link to /approach/ |
-| 7 | People | `hm-culture` + `hm-faces` | Real faces, one culture line |
+| 7 | People | `hm-split` + `hm-faces` | Real faces, one culture line |
 | 8 | FAQ | `hm-faq` | 4–6 buyer questions (feeds FAQPage schema) |
 
 ## Service (7)
 | # | Section | Component | Idea |
 |---|---|---|---|
 | 1 | Hero | `hm-page-hero` + `hm-hero__foot` | Pain headline; `hm-answer` (40–60 words); `hm-facts` (For / Outcome / Starting at) |
-| 2 | Showcase | `hm-showcase` / `hm-gallery` | Real work for this service |
+| 2 | Showcase | `hm-gallery` | Real work for this service |
 | 3 | The contrast + what you get | `hm-head` + `hm-features` | "Most agencies… We…" + 4–6 features |
 | 4 | Proof | `hm-dark` + `hm/work-grid {"service":…}` + `hm-quote is-compact` | Case studies filtered to this service + one unique quote |
 | 5 | Fit | `hm-fit` | Good fit / not a fit, 4 each |

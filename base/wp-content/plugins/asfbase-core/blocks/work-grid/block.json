@@ -11,7 +11,8 @@
 		"layout": { "type": "string", "enum": [ "featured", "grid" ], "default": "featured" },
 		"service": { "type": "string", "default": "" },
 		"showFilter": { "type": "boolean", "default": false },
-		"excludeCurrent": { "type": "boolean", "default": true }
+		"excludeCurrent": { "type": "boolean", "default": true },
+		"titleLevel": { "type": "number", "enum": [ 2, 3 ], "default": 3 }
 	},
 	"supports": { "html": false, "align": [ "wide", "full" ] },
 	"textdomain": "hm",

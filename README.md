@@ -55,10 +55,14 @@ git clone https://github.com/kuldeep3/agentic-site-framework.git
 starter/new-site.sh acme-growth "Acme Growth Co" ~/Projects/acme-website --short "Acme" --mark "AG"
 ```
 
+Outside the US, add `--region "United Kingdom" --currency £ --timezone Europe/London` (schema, the enquiry form's budget choices, WordPress's clock).
+
 ```bash
 # 2. Run the local site (WordPress on SQLite, no database server needed)
 cd ~/Projects/acme-website && bin/setup.sh && bin/serve.sh
 ```
+
+That serves the site at `http://localhost:8088`, the address the checks use. On Laravel Valet instead, link `wordpress/` into Valet's sites folder and run `bin/asf set site_url http://acme-growth.test`.
 
 For a client that makes products and sells through retailers or dealers, add `--kind product-brand`: product lines, customer builds, "Where to buy" and dealer enquiries instead of services and strategy calls (recipes in [`patterns/page-recipes.md`](patterns/page-recipes.md)).
 

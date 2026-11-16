@@ -17,6 +17,8 @@ For each site, record:
 6. What makes it look expensive: type, spacing, imagery, motion, restraint. Be specific
    (e.g. "sentence-case display at ~96px, a single accent colour, real client photography full-bleed").
 7. What we should NOT borrow, and why.
+8. Their colours and type, read from the CSS (not guessed from screenshots): the main hex values
+   and the font families. Stage 3 designs against these category codes (prompt 07).
 
 Finish with a section "Patterns to adapt for [CLIENT]", 5–8 bullets, each tied to something
 true in docs/truth.md. Never copy a line of their copy.

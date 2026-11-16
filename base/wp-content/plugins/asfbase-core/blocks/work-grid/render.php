@@ -70,7 +70,8 @@ if ( ! $hm_query->have_posts() && empty( $attributes['showFilter'] ) ) {
 						<?php endif; ?>
 					</div>
 					<div class="hm-work__meta"><span><?php echo esc_html( $hm_card['client'] ); ?></span><span><?php echo esc_html( $hm_card['services'] ); ?></span></div>
-					<h3 class="hm-work__title"><?php echo esc_html( $hm_card['title'] ); ?></h3>
+					<?php // Under a page's h1 (the /work/ archives) the card titles are h2; under a section's h2, h3. ?>
+					<h<?php echo 2 === (int) ( $attributes['titleLevel'] ?? 3 ) ? 2 : 3; ?> class="hm-work__title"><?php echo esc_html( $hm_card['title'] ); ?></h<?php echo 2 === (int) ( $attributes['titleLevel'] ?? 3 ) ? 2 : 3; ?>>
 				</a>
 			</article>
 		<?php endwhile; ?>

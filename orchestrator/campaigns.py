@@ -30,6 +30,11 @@ PAID = {"cpc", "ppc", "paid-social", "paid-search", "display", "paid", "video", 
 STOP = set("the a an and or for to of in on with your you our we is are be get at by from this that it its how what into".split())
 
 
+def as_dict(value):
+    """A breakdown from the metrics endpoint. Older plugins send an empty one as [] instead of {}."""
+    return value if isinstance(value, dict) else {}
+
+
 def tag(value):
     """A tag value: lowercase, hyphens, nothing else. One spelling per source, or reports split it."""
     return re.sub(r"[^a-z0-9._-]+", "-", (value or "").strip().lower()).strip("-")
@@ -288,9 +293,7 @@ def results(state, slug, upto=None):
     out = {"status": "ok", "campaign": slug, "from": c["start"], "to": end.isoformat(), "elapsed_days": elapsed, "days": span,
            "leads": leads["total"], "expected_by_now": expected, "goal": c.get("goal_leads"),
            "cost_per_lead": round(c["spend"] / leads["total"], 2) if c.get("spend") and leads["total"] else None,
-           "spend": c.get("spend"), "by_content": leads.get("by_content", {}), "by_source": leads.get("by_source", {}),
-           "by_medium": leads.get("by_medium", {}), "by_landing": leads.get("by_landing", {}), "by_page": leads.get("by_page", {}),
-           "by_day": leads.get("by_day", {})}
+           "spend": c.get("spend"), **{k: as_dict(leads.get(k)) for k in ("by_content", "by_source", "by_medium", "by_landing", "by_page", "by_day")}}
     sessions = measure.ga4_campaign_sessions([slug], c["start"], end.isoformat())
     if sessions.get("status") == "ok":
         n = sessions["sessions"].get(slug, 0)
@@ -302,6 +305,8 @@ def results(state, slug, upto=None):
 def pace_word(r):
     if r.get("expected_by_now") is None:
         return "–"
+    if r.get("elapsed_days", 0) < 7 and r["expected_by_now"] < 2:
+        return "too early to tell"
     if r["leads"] >= r["expected_by_now"]:
         return "on pace"
     return "behind" if r["leads"] >= 0.6 * r["expected_by_now"] else "well behind"
@@ -422,7 +427,7 @@ def weekly(state, rng, week_leads):
         if c.get("closed") and day(c["closed"]) < frm:
             continue
         r = results(state, slug, upto=rng[1])
-        this_week = (week_leads or {}).get("by_campaign", {}).get(slug, 0) if week_leads else None
+        this_week = as_dict(week_leads.get("by_campaign")).get(slug, 0) if week_leads else None
         best = next(iter(r.get("by_content", {}) or {}), None) if r.get("status") == "ok" else None
         rows.append({"campaign": slug, "name": c["name"], "status": status(c, to), "this_week": this_week,
                      "to_date": r.get("leads"), "goal": c.get("goal_leads"), "pace": pace_word(r) if r.get("status") == "ok" else "–",

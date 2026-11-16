@@ -8,6 +8,7 @@
   "dupe_min_chars": 40,
   "ignore_files": ["legal-*"],
   "crawl_max_pages": 150,
+  "skeleton_names": ["Example service", "example-service", "Example client", "Example industry", "example-case-study", "Example line", "example-line", "Example build"],
   "launch": {
     "pages": 5,
     "page_weight_kb": [1500, 3000],

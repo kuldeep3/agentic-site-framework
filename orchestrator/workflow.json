@@ -74,7 +74,7 @@
       "manual": [
         "The client signed the goal document",
         "The founder agrees with the business arc",
-        "Constraints (white-label, names that can't appear, regulated claims) are written down"
+        "Constraints (white-label, names that can’t appear, regulated claims) are written down, and those names are in docs/framework/qa/config.json → \"forbidden\""
       ]
     },
     {
@@ -185,6 +185,13 @@
           "hint": "Write the chosen design into assets/css/brand.css + theme.json"
         },
         {
+          "id": "pages",
+          "type": "ia_pages",
+          "path": "docs/02-information-architecture.md",
+          "label": "Every page in the IA exists in content/, and no skeleton page is left that the IA doesn't plan",
+          "hint": "Write the missing pages (prompt 06); rename or delete skeleton pages the IA doesn't list (then bin/setup.sh --reseed)"
+        },
+        {
           "id": "lint",
           "type": "command",
           "run": "python3 docs/framework/qa/lint_content.py content",
@@ -221,9 +228,9 @@
         {
           "id": "crawl",
           "type": "command",
-          "run": "python3 docs/framework/qa/crawl.py {site_url}",
-          "label": "Crawl: no errors",
-          "hint": "Fix what crawl.py reports (status, H1, meta, schema, links)"
+          "run": "python3 docs/framework/qa/crawl.py {site_url} --strict",
+          "label": "Crawl: no errors, and no [CONFIRM] left on any page, title or meta description",
+          "hint": "Fix what crawl.py reports; pages left over from the skeleton are removed with bin/setup.sh --reseed or in WordPress"
         },
         {
           "id": "staging",
@@ -314,10 +321,10 @@
         },
         {
           "id": "analytics",
-          "type": "state_set",
+          "type": "analytics_live",
           "key": "measurement.analytics",
-          "label": "Analytics connected",
-          "hint": "Set ASF_GA4_ID (or ASF_GTM_ID) on the site, then `bin/asf set measurement.analytics \"GA4 G-XXXX\"`"
+          "label": "Analytics tag live on the production site",
+          "hint": "Set ASF_GA4_ID (or ASF_GTM_ID) in production's wp-config, then `bin/asf set measurement.analytics \"GA4 G-XXXX\"`; the check looks for that ID on the live home page"
         },
         {
           "id": "prompts",

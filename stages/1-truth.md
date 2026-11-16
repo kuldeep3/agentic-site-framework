@@ -34,7 +34,7 @@ Prompt: [`prompts/02-truth-harvest.md`](../prompts/02-truth-harvest.md). Read ev
 - **Claims register:** every number, client name and quote, with its source and a public / private / needs-OK status.
 - **Voice bank:** 10–20 verbatim phrases from the founders and their clients.
 - **Offer inventory:** what's sold today, at what price signal, and what's productized.
-- **Constraints:** white-label rules, names that can't appear, regulated claims.
+- **Constraints:** white-label rules, names that can't appear, regulated claims. Add every name that must never appear to `docs/framework/qa/config.json` → `forbidden`: that's what lint and the crawl check.
 
 ### 1.4 Image inventory (orchestrator, with a browser)
 Download every image from the live site into `content/media/`. Then **open each one and look at it.** Record in the truth file which client or person it really shows, and drop stock, duplicates and anything under 800px that has to carry a hero.
@@ -65,7 +65,7 @@ Prompt: [`prompts/03-reference-teardown.md`](../prompts/03-reference-teardown.md
 - [ ] Every claim in the register has a source and a status (public / private / needs OK)
 - [ ] The business arc is written in one paragraph, in the client's words, and the founder agrees with it
 - [ ] Every image in `content/media/` was opened, mapped to the client it shows, or deleted
-- [ ] Constraints (white-label, names, regulated claims) are written down
+- [ ] Constraints (white-label, names, regulated claims) are written down, and the names are in `qa/config.json` → `forbidden`
 - [ ] Voice bank has at least 10 verbatim lines
 
 **Common failure:** skipping 1.3 because "we know this client." On the first project, the delivery team had years of shared work with the client, and the first messaging still came out generic.

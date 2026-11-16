@@ -10,9 +10,8 @@ docs/briefs/services-*.md].
 Read first:
 - docs/01-strategy.md: §3 (message stack) and §7 (voice)
 - docs/truth.md: claims register and voice bank
-- docs/05-content-authoring.md: the file format, front matter and component vocabulary.
-  Use ONLY these components and copy their markup patterns exactly.
-- content/pages/home.html: a finished page to match for markup style
+- docs/05-content-authoring.md: the file format, front matter, component vocabulary and, in its
+  appendix, the exact markup of every component. Use ONLY these components and copy that markup.
 - docs/framework/patterns/messaging.md
 
 For each brief, write content/pages/<slug-with-dashes>.html:

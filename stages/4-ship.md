@@ -85,7 +85,7 @@ python3 docs/framework/qa/launch.py https://staging.<domain> --env staging
 
 ## Gate G4: Ship
 
-- [ ] `lint_content.py` and `crawl.py` pass with zero errors
+- [ ] `lint_content.py --strict` and `crawl.py --strict` pass with zero errors (no `[CONFIRM]` in pages, titles, meta descriptions or theme templates)
 - [ ] `launch.py` on staging: zero errors in security, performance, accessibility and launch settings
 - [ ] Lighthouse ≥ 90 on home and two inner pages (or the DevTools scores recorded with a skip, if staging isn't public)
 - [ ] Responsive sweep clean at 375 / 768 / 1440 / 1920

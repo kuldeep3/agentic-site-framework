@@ -642,7 +642,9 @@ def check_performance(ctx, rep):
                 no_dims.append((short(absu, base), where))
             if first_main and i == first_main[1] and a.get("loading") == "lazy":
                 lazy_lcp.append(where)
-            if i >= 3 and in_main and a.get("loading") != "lazy":
+            # fetchpriority="high" marks the hero (LCP) image, which is often 4th or 5th in the DOM
+            # after small logos or avatars: it should load straight away.
+            if i >= 3 and in_main and a.get("loading") != "lazy" and (a.get("fetchpriority") or "").lower() != "high":
                 eager.append(where)
         for f in d.iframes:
             if re.search(r"youtube\.com|vimeo\.com|google\.com/maps", f.get("src", "")) and f.get("loading") != "lazy":

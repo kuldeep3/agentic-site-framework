@@ -7,7 +7,8 @@ Finds pages from the WordPress sitemap (falls back to following links from the h
   errors    non-200 pages · zero or several <h1> · no <title> · no meta description (indexable pages) ·
             JSON-LD that doesn't parse · broken internal links and images · forbidden (white-label)
             terms anywhere in the HTML, including meta and schema · missing /robots.txt or /llms.txt
-  warnings  title over 60 chars · description over 160 · no canonical · [CONFIRM] chips (errors with --strict)
+  warnings  title over 60 chars · description over 160 · no canonical · [CONFIRM] chips on the page or in
+            its title and meta description (errors with --strict)
 
 Standard library only. Exit code 1 when there are errors.
 """
@@ -161,6 +162,10 @@ def main():
         confirms = body.count("hm-confirm")
         if confirms:
             (errors if args.strict else warnings).append(f"{confirms} [CONFIRM] chip(s)")
+        # A chip in the title or meta description is what search results would show.
+        for label, value in (("title", title), ("meta description", desc), ("og:title", p.meta.get("og:title", ""))):
+            if "[CONFIRM" in value:
+                (errors if args.strict else warnings).append(f"[CONFIRM] in the {label}: “{value[:70]}”")
         for ref in p.links | p.images:
             absu = urldefrag(urljoin(final, ref))[0]
             if absu.startswith("http") and same_site(absu, base) and "/wp-admin" not in absu and "/wp-json" not in absu:

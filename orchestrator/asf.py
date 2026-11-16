@@ -112,7 +112,7 @@ def filled_row(row):
 def run_check(root, state, check):
     """Return (passed: bool, detail: str)."""
     t = check["type"]
-    if t in ("no_placeholders", "section_filled", "table_rows", "media_mapped"):
+    if t in ("no_placeholders", "section_filled", "table_rows", "media_mapped", "ia_pages"):
         path = root / check["path"]
         if not path.exists():
             return False, f"{check['path']} doesn't exist yet"
@@ -144,6 +144,43 @@ def run_check(root, state, check):
         if not media:
             return True, "no images yet"
         return not missing, "" if not missing else f"{len(missing)} of {len(media)} not mapped, e.g. {missing[0]}"
+    if t == "analytics_live":
+        # The ID recorded with `asf set measurement.analytics` must be on the live home page.
+        rec = str(dotted_get(state, "measurement.analytics") or "")
+        ids = re.findall(r"\b(G-[A-Z0-9]{6,}|GTM-[A-Z0-9]{4,})\b", rec)
+        if not ids:
+            return False, "`asf set measurement.analytics \"GA4 G-XXXX\"` not done (with the real ID)"
+        url = (dotted_get(state, "deploy.production_url") or state.get("site_url") or "").rstrip("/") + "/"
+        try:
+            import urllib.request
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "ASF-check/1.0"}), timeout=20) as r:
+                html = r.read().decode("utf-8", "replace")
+        except Exception as e:  # noqa: BLE001 (any network failure is a failed check)
+            return False, f"couldn't load {url}: {str(e)[:80]}"
+        found = [i for i in ids if i in html]
+        return bool(found), f"{found[0]} found on {url}" if found else f"{ids[0]} isn't on {url} (wp-config ASF_GA4_ID / ASF_GTM_ID on production?)"
+    if t == "ia_pages":
+        # The IA's sitemap (§1) against content/pages: planned pages that don't exist, and skeleton
+        # pages nobody planned. Archives, [x] patterns, legal pages and campaign landing pages are skipped.
+        body = section(text, "sitemap")
+        if body is None:
+            return False, "no Sitemap section in the IA"
+        planned = set()
+        for row in table_rows(body):
+            cells = [c.strip().strip("`") for c in row.strip().strip("|").split("|")]
+            if not cells or not cells[0].startswith("/") or "[" in cells[0] or (len(cells) > 2 and "archive" in cells[2].lower()):
+                continue
+            planned.add(cells[0].strip("/") or "home")
+        pages = {}
+        for f in sorted((root / "content/pages").glob("*.html")):
+            head = f.read_text(encoding="utf-8")[:800]
+            m = re.search(r"^slug:\s*(\S+)", head, re.M)
+            if m and not f.name.startswith("legal-") and "template: page-landing" not in head:
+                pages[m.group(1).strip("/")] = f.name
+        missing, extra = sorted(planned - set(pages)), sorted(set(pages) - planned)
+        parts = ([f"no page for " + ", ".join(f"/{s}/" for s in missing[:4])] if missing else []) + \
+                ([f"not in the IA: " + ", ".join(pages[s] for s in extra[:4])] if extra else [])
+        return not parts, "; ".join(parts) or f"{len(planned)} planned pages, all present"
     if t == "glob_min":
         n = len(globlib.glob(str(root / check["glob"])))
         return n >= check["min"], f"{n} found, need {check['min']}"

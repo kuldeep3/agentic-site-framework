@@ -112,6 +112,12 @@ function hm_metrics_leads( string $from, string $to, string $campaign = '' ): ar
 	if ( isset( $out['by_day'] ) ) {
 		ksort( $out['by_day'] );
 	}
+	// An empty breakdown is still an object in JSON ({}, not []), so readers can always look keys up.
+	foreach ( $out as $k => $v ) {
+		if ( is_array( $v ) && ! $v ) {
+			$out[ $k ] = new stdClass();
+		}
+	}
 	return $out;
 }
 

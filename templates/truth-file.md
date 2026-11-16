@@ -12,7 +12,7 @@ The only source for anything the site says. If it isn't here, it doesn't go on t
 **Source(s):** [notes file, call date, interview]
 
 ## 2. Claims register
-Every number, client name, quote and superlative the site might use.
+Every number, client name, quote, superlative and **price** the site might use. Prices in §4 need a row here too, with their status.
 
 | ID | Claim | Source | Status | Notes |
 |---|---|---|---|---|
@@ -33,6 +33,13 @@ Verbatim phrases from founders, staff and their clients. Writers quote and echo 
 | Offer | What's included | Price signal | Productized? | Where it's sold today |
 |---|---|---|---|---|
 | | | | | |
+
+## 4b. How they work
+The steps a client goes through, in the founders' words (the approach page and every "how it works" section come from here; writers don't invent a method).
+
+| # | Step | What happens | What the client gets | How long |
+|---|---|---|---|---|
+| 1 | | | | |
 
 ## 5. People
 | Name (as shown) | Role | Photo file | OK to show? |

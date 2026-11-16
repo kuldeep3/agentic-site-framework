@@ -92,11 +92,15 @@ def reset_client_files(t, a, fw, ref):
                "function hm_gone_paths(): array {\n\treturn array();\n}\n", s, count=1, flags=re.S)
     rp.write_text(s)
 
-    # Archive intros in block templates are client copy.
+    # Archive intros in block templates are client copy (stage 3 writes them; lint flags them till then).
+    # The 404, search and service-archive intros are generic or come from WordPress, so they stay.
     for tpl in (theme / "templates").glob("*.html"):
         s = tpl.read_text()
-        s2 = re.sub(r'<p class="hm-lead hm-mt-l">[^<]*</p>',
-                    '<p class="hm-lead hm-mt-l"><mark class="hm-confirm">[CONFIRM: one-line intro for this archive]</mark></p>', s)
+        if tpl.name not in ("archive-case_study.html", "archive.html", "home.html", "index.html"):
+            s2 = s
+        else:
+            s2 = re.sub(r'<p class="hm-lead hm-mt-l">[^<]*</p>',
+                        '<p class="hm-lead hm-mt-l"><mark class="hm-confirm">[CONFIRM: one-line intro for this archive]</mark></p>', s)
         if a.kind == "product-brand":
             s2 = s2.replace('<p class="hm-label">Work</p>', '<p class="hm-label">Builds</p>')
         if s2 != s:
@@ -157,7 +161,9 @@ def reset_client_files(t, a, fw, ref):
     commands.mkdir(parents=True, exist_ok=True)
     shutil.copy(fw / "orchestrator/claude-command.md", commands / "asf.md")
     state = {
-        "framework": "Agentic Site Framework", "client": a.name, "kind": a.kind, "site_url": f"http://{a.slug}.test",
+        # bin/serve.sh's address. On Laravel Valet: `bin/asf set site_url http://<slug>.test`.
+        "framework": "Agentic Site Framework", "client": a.name, "kind": a.kind, "site_url": "http://localhost:8088",
+        "region": a.region, "currency": a.currency, "timezone": a.timezone,
         "rest_namespace": f"{a.slug}/v1",
         "created": datetime.datetime.now().astimezone().isoformat(timespec="minutes"), "stage": "truth",
         "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
@@ -177,6 +183,9 @@ def main():
     for k in ("target", "reference", "framework", "slug", "name", "short", "mark"):
         ap.add_argument(f"--{k}", required=True)
     ap.add_argument("--kind", default="agency", choices=["agency", "product-brand"])
+    ap.add_argument("--region", default="United States", help="where the client sells (schema areaServed)")
+    ap.add_argument("--currency", default="$", help="currency symbol for the brief form's budget choices")
+    ap.add_argument("--timezone", default="America/New_York", help="WordPress timezone (bin/setup.sh reads it from asf.json)")
     a = ap.parse_args()
     t, fw, ref = Path(a.target), Path(a.framework), Path(a.reference)
 
@@ -185,6 +194,9 @@ def main():
     # Placeholders in the skeleton files.
     for p in [*t.joinpath("content").rglob("*.html"), t / f"wp-content/plugins/{SRC_PLUGIN}/inc/entity.php"]:
         s = p.read_text().replace("__NAME__", a.name).replace("__SHORT__", a.short).replace("__MARK__", a.mark)
+        if p.name == "entity.php":
+            s = s.replace("'area_served' => 'United States'", "'area_served' => " + repr(a.region))
+            s = "\n".join(ln.replace("$", a.currency) if "'budgets'" in ln else ln for ln in s.split("\n"))
         p.write_text(s)
 
     # Rename the base's identifiers everywhere except the framework copy.

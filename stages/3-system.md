@@ -52,8 +52,10 @@ Prompt: [`prompts/06-page-copy.md`](../prompts/06-page-copy.md). Split the pages
 - its page briefs
 - the strategy doc (messaging + voice)
 - the truth file (claims + voice bank)
-- the component vocabulary
+- the component vocabulary and its markup appendix (`docs/05-content-authoring.md`)
 - the rule: *unverified number → `<mark class="hm-confirm">[CONFIRM: …]</mark>`*
+
+First make the pages match the IA: rename skeleton pages to the planned URLs (`services-example-service.html` → the real service; update `inc/navigation.php` and any links), delete the ones the IA doesn't plan, and reseed (`bin/setup.sh --reseed`). G3 checks both directions. The archive pages' intro lines live in the theme's templates (`templates/archive-case_study.html`, `home.html`, `index.html`, `archive.html`); write them there or in Appearance → Editor. Lint flags any `[CONFIRM]` left in templates.
 
 Writers produce `content/pages/*.html` directly as block markup. The orchestrator then reads every page in order, as one buyer would, and removes repetition across families (Writers can't see each other's pages).
 
@@ -78,6 +80,7 @@ The brief form posts to the plugin's REST endpoint, stores a private lead and em
 - [ ] **Not a re-skin:** palette, type pairing, layout and section rhythm, and signature components differ from the wireframe and from every other client built with this framework
 - [ ] Designer review passes the anti-"AI look" checklist ([`patterns/design-system.md`](../patterns/design-system.md) §4)
 - [ ] The home hero has one message, one image, one primary CTA (calm-hero rule)
+- [ ] Every page the IA plans exists, and no skeleton page is left that it doesn't (`bin/asf check G3`)
 - [ ] `python3 docs/framework/qa/lint_content.py content` passes with no errors (warnings listed in the checklist)
 - [ ] `bin/setup.sh --fresh` rebuilds the site with no errors
 - [ ] The client has seen and approved the home page and one service page in the browser

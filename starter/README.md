@@ -4,6 +4,8 @@
 starter/new-site.sh acme-growth "Acme Growth Co" ~/Projects/acme-website --short "Acme" --mark "AG"
 ```
 
+Outside the US, add `--region "United Kingdom" --currency £ --timezone Europe/London`: they set schema's `areaServed`, the brief form's budget currency and WordPress's timezone (defaults: United States, $, America/New_York).
+
 Add `--kind product-brand` for a client that makes products and sells through retailers or dealers. It uses its own skeleton (`skeleton/product-brand/`): product lines instead of services, customer builds instead of case studies, "Where to buy" as the main action and a fitment/dealer enquiry form.
 
 It copies the **wireframe base** (`../base/`, or `--reference <path>`) and makes it the new client's:

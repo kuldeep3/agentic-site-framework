@@ -33,7 +33,7 @@ All three exit with code 1 when there are errors, so they can gate CI. Add `--st
 - `--only lighthouse` sends the home page and two inner pages to Google PageSpeed Insights (public URLs only; local and private addresses are refused). `PSI_API_KEY` raises the rate limit.
 - It only reads: GET requests to the site's own pages and a fixed list of well-known file paths. Run it on sites you're responsible for.
 
-**contrast.js:** paste it on each key template, once per colour context (light, dark, footer, header over a dark hero). It returns failing colour pairs with an example and a count, text it can't measure (over images or gradients) for a check by eye, and controls with no focus style.
+**contrast.js:** paste it on each key template, once per colour context (light, dark, footer, header over a dark hero). It returns failing colour pairs with an example and a count, text it can't measure (over images or gradients) for a check by eye, and controls with no focus style. "Behind" includes panels drawn with `::before` and, for a fixed or sticky header, whatever is under it on screen; a focus style on the parent (`:focus-within`) counts. Transitions are paused while it measures.
 
 ## Config (`config.json`)
 - `forbidden`: names that must never appear (white-label). **Add the client's own sensitive names**: the delivery partner, offshore team, tools, and any client that can't be named.

@@ -2,7 +2,7 @@
 # One-command local setup for the ASF Base website.
 #
 #   bin/setup.sh            # install WordPress (SQLite), link theme + plugin, seed content
-#   bin/setup.sh --reseed   # keep WordPress, wipe and re-import seed content only
+#   bin/setup.sh --reseed   # keep WordPress, re-import the seed content (pages whose file is gone go to the Trash)
 #   bin/setup.sh --fresh    # delete ./wordpress and start over
 #
 # Requirements: PHP 8.1+ (pdo_sqlite), WP-CLI 2.9+, curl, unzip.
@@ -67,7 +67,9 @@ if [[ "${1:-}" != "--reseed" ]]; then
   wp theme activate asfbase --quiet
   wp plugin activate asfbase-core --quiet
   wp rewrite structure '/%postname%/' --hard --quiet
-  wp option update timezone_string "America/New_York" --quiet
+  TZ_NAME="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("timezone") or "America/New_York")' "$ROOT/asf.json" 2>/dev/null || echo America/New_York)"
+  wp option update timezone_string "$TZ_NAME" --quiet
+  wp option update default_comment_status closed --quiet   # a marketing site: no comment spam
 fi
 
 echo "→ Seeding content"

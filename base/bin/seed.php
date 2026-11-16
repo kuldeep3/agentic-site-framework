@@ -5,7 +5,7 @@
  *   wp eval-file bin/seed.php <path-to-content>      (bin/setup.sh does this for you)
  *
  * content/
- *   media/*.jpg|png        → Media Library (matched by filename on re-runs)
+ *   media/*.jpg|png        → Media Library (matched by filename; re-imported when the file changes)
  *   pages/*.html           → Pages      (front matter + Gutenberg block markup)
  *   work/*.html            → Case studies
  *   posts/posts.json       → Insights posts (snapshot of the live blog)
@@ -21,6 +21,9 @@
  *   cta: Get the audit                         ← landing pages: the header button's label (it jumps to #form)
  *   order: 3                                   ← menu_order
  *   noindex: true                              ← optional
+ *
+ * Re-runs update pages by slug. A page or case study this script made earlier whose file has been
+ * renamed or deleted is moved to the Trash (pages made by hand in WordPress are left alone).
  *   dark_hero: true                            ← header starts light-on-dark
  *   # case studies only:
  *   client: Example Co | year: 2015–present | stat: 20k/hr | stat_label: hits held
@@ -29,6 +32,8 @@
  *
  * Placeholders in content: {{media:file.jpg}} → site-relative URL (works on any host); {{media-thumbnail:…}} etc. pick a size, {{media-id:file.jpg}} → attachment ID,
  * {{booking}} → Calendly URL, {{phone}}, {{phone-e164}}, {{email}}.
+ * Image blocks whose <img src> is a {{media…:file}} placeholder also get the attachment ID (the block's
+ * "id" and sizeSlug, class wp-image-N on the <img>), so WordPress adds width/height, srcset and lazy-loading.
  *
  * NOTE: seed files are the source of truth for LOCAL builds. After launch, the
  * WordPress database is the source of truth. Don't re-seed production.
@@ -66,7 +71,10 @@ function hm_seed_parse( string $file ): array {
 	return array( $meta, trim( $raw ) );
 }
 
-/** Import every file in content/media once. @return array<string, int> filename → attachment ID */
+/**
+ * Import every file in content/media. A file is imported again when its contents change (say it was
+ * recompressed), so the uploads always match the folder. @return array<string, int> filename → attachment ID
+ */
 function hm_seed_media( string $dir ): array {
 	$map = array();
 	// Mirror the folder: seeded attachments whose file was removed from content/media are deleted.
@@ -78,10 +86,16 @@ function hm_seed_media( string $dir ): array {
 	}
 	foreach ( glob( "{$dir}/*.{jpg,jpeg,png,webp,svg}", GLOB_BRACE ) as $path ) {
 		$name     = basename( $path );
+		$hash     = md5_file( $path );
 		$existing = get_posts( array( 'post_type' => 'attachment', 'meta_key' => '_hm_seed_file', 'meta_value' => $name, 'fields' => 'ids', 'posts_per_page' => 1 ) ); // phpcs:ignore
-		if ( $existing ) {
+		if ( $existing && get_post_meta( $existing[0], '_hm_seed_hash', true ) === $hash ) {
 			$map[ $name ] = (int) $existing[0];
 			continue;
+		}
+		if ( $existing ) {
+			// Changed, or seeded before hashes were kept: import it again. The new attachment gets a new
+			// ID; the pages below are re-seeded with it, and the file keeps its name (so its URL).
+			wp_delete_attachment( $existing[0], true );
 		}
 		$tmp = wp_tempnam( $name );
 		copy( $path, $tmp );
@@ -91,13 +105,58 @@ function hm_seed_media( string $dir ): array {
 			continue;
 		}
 		update_post_meta( $id, '_hm_seed_file', $name );
+		update_post_meta( $id, '_hm_seed_hash', $hash );
 		$map[ $name ] = (int) $id;
-		WP_CLI::log( "  media  {$name}" );
+		WP_CLI::log( "  media  {$name}" . ( $existing ? ' (changed)' : '' ) );
 	}
 	return $map;
 }
 
+/**
+ * Image blocks written as <img src="{{media…:file}}"> get what the editor stores when an image is
+ * picked from the Media Library: the block's "id" and sizeSlug, a size-* class on the <figure> and
+ * class="wp-image-N" on the <img>. WordPress needs that class to add width/height (no layout shift),
+ * srcset and lazy-loading when the page is shown.
+ */
+function hm_seed_image_ids( string $html, array $media ): string {
+	return preg_replace_callback(
+		'/<!-- wp:image(?: (\{[^\n]*?\}))? -->(.*?)<!-- \/wp:image -->/s',
+		static function ( array $m ) use ( $media ): string {
+			$inner = $m[2];
+			if ( ! preg_match( '/<img\b[^>]*\ssrc="\{\{media(?:-(thumbnail|medium|medium_large|large|full))?:([^}]+)\}\}"[^>]*>/', $inner, $img ) ) {
+				return $m[0]; // Not a placeholder image.
+			}
+			$id    = $media[ $img[2] ] ?? 0;
+			$attrs = '' === $m[1] ? array() : json_decode( $m[1], true );
+			if ( ! $id || ! is_array( $attrs ) ) {
+				return $m[0]; // A file not in content/media (lint_content.py reports it), or attributes that hold a placeholder.
+			}
+			$size              = $img[1] ? $img[1] : 'large';
+			$attrs             = array_merge( array( 'id' => $id ), $attrs, array( 'id' => $id, 'sizeSlug' => $size ) );
+			// The <img>: class="… wp-image-N" (replacing a stale one).
+			$tag = $img[0];
+			if ( preg_match( '/\sclass="([^"]*)"/', $tag, $class ) ) {
+				$names = trim( preg_replace( '/\s+/', ' ', preg_replace( '/\bwp-image-\d+\b/', '', $class[1] ) ) . " wp-image-{$id}" );
+				$tag   = str_replace( $class[0], ' class="' . $names . '"', $tag );
+			} else {
+				$tag = preg_replace( '/\s*\/?>$/', ' class="wp-image-' . $id . '"$0', $tag, 1 );
+			}
+			$inner = str_replace( $img[0], $tag, $inner );
+			// The <figure>: one size-* class, matching sizeSlug.
+			$inner = preg_replace_callback(
+				'/(<figure\b[^>]*\sclass=")([^"]*)"/',
+				static fn( array $f ): string => $f[1] . trim( preg_replace( '/\s*\bsize-[\w-]+/', '', $f[2] ) . " size-{$size}" ) . '"',
+				$inner,
+				1
+			);
+			return '<!-- wp:image ' . serialize_block_attributes( $attrs ) . ' -->' . $inner . '<!-- /wp:image -->';
+		},
+		$html
+	);
+}
+
 function hm_seed_placeholders( string $html, array $media ): string {
+	$html = hm_seed_image_ids( $html, $media );
 	$html = preg_replace_callback( '/\{\{media-id:([^}]+)\}\}/', fn( $m ) => (string) ( $media[ $m[1] ] ?? 0 ), $html );
 	// {{media:file}} = large; {{media-thumbnail:file}}, {{media-medium:file}}, {{media-medium_large:file}}, {{media-full:file}} pick a size.
 	$html = preg_replace_callback(
@@ -147,6 +206,7 @@ function hm_seed_upsert( string $type, array $meta, string $content, array $medi
 		return 0;
 	}
 
+	update_post_meta( $id, '_hm_seed_path', $path ); // So a reseed can tell its own pages from hand-made ones.
 	update_post_meta( $id, '_wp_page_template', $meta['template'] ?? '' );
 	update_post_meta( $id, '_hm_seo_title', $meta['seo_title'] ?? '' );
 	update_post_meta( $id, '_hm_meta_description', $meta['description'] ?? '' );
@@ -190,14 +250,31 @@ foreach ( glob( "{$hm_dir}/pages/*.html" ) as $file ) {
 }
 // Parents first: sort by path depth, then by file order.
 usort( $hm_pages, fn( $a, $b ) => substr_count( $a[0]['slug'] ?? '', '/' ) <=> substr_count( $b[0]['slug'] ?? '', '/' ) );
+$hm_seeded = array();
 foreach ( $hm_pages as [ $meta, $body ] ) {
-	hm_seed_upsert( 'page', $meta, $body, $hm_media );
+	$hm_seeded[] = hm_seed_upsert( 'page', $meta, $body, $hm_media );
 }
 
 WP_CLI::log( 'Case studies' );
 foreach ( glob( "{$hm_dir}/work/*.html" ) as $file ) {
 	[ $meta, $body ] = hm_seed_parse( $file );
-	hm_seed_upsert( 'case_study', $meta, $body, $hm_media );
+	$hm_seeded[] = hm_seed_upsert( 'case_study', $meta, $body, $hm_media );
+}
+
+// Pages and case studies this script made earlier whose file is gone (renamed or deleted) go to the
+// Trash, so a renamed skeleton page doesn't stay live. Pages made by hand in WordPress are never touched.
+$hm_gone = get_posts(
+	array(
+		'post_type'      => array( 'page', 'case_study' ),
+		'post_status'    => array( 'publish', 'draft', 'private' ),
+		'posts_per_page' => -1,
+		'meta_key'       => '_hm_seed_path', // phpcs:ignore
+		'post__not_in'   => array_filter( $hm_seeded ),
+	)
+);
+foreach ( $hm_gone as $hm_post ) {
+	wp_trash_post( $hm_post->ID );
+	WP_CLI::log( "  trashed {$hm_post->post_type} /" . get_post_meta( $hm_post->ID, '_hm_seed_path', true ) . '/ (its file is gone; restore it from the Trash if that was a mistake)' );
 }
 
 WP_CLI::log( 'Posts' );

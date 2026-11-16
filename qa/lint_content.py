@@ -8,8 +8,10 @@ Checks every content/pages/*.html and content/work/*.html:
             block's wrapper tag (the editor's "unexpected content") · missing title/slug ·
             SEO title / description too long · more than one <h1> · too many top-level sections ·
             missing {{media:…}} files · forbidden (white-label) terms
-  warnings  missing description · [CONFIRM] chips (errors with --strict) · buzzwords ·
-            the contrast phrase used more than once · text or quotes repeated across pages
+  warnings  missing description · [CONFIRM] chips, in the page or its front matter (errors with
+            --strict) · leftover skeleton names such as "Example service" (errors with --strict) ·
+            buzzwords · the contrast phrase used more than once · text or quotes repeated across pages
+  theme     [CONFIRM] chips left in the theme's templates and parts (warnings; errors with --strict)
 
 Standard library only. Exit code 1 when there are errors.
 """
@@ -72,12 +74,20 @@ def lint_file(path, cfg, media_dir, strict):
     for key in ("title", "slug"):
         if not meta.get(key):
             errors.append(f"front matter: missing '{key}'")
-    if meta.get("seo_title") and len(meta["seo_title"]) > cfg["seo_title_max"]:
+    # A chip in front matter would go live as the page title or the search snippet. Its length is
+    # judged once it's replaced, not while it's a placeholder.
+    front_chips = [f"{k}: {c}" for k, v in meta.items() for c in CONFIRM.findall(v)]
+    if front_chips:
+        (errors if strict else warnings).append(f"{len(front_chips)} [CONFIRM] chip(s) in front matter ({', '.join(sorted({c.split(':')[0] for c in front_chips}))})")
+    if meta.get("seo_title") and not CONFIRM.search(meta["seo_title"]) and len(meta["seo_title"]) > cfg["seo_title_max"]:
         errors.append(f"seo_title is {len(meta['seo_title'])} chars (max {cfg['seo_title_max']})")
     if not meta.get("description"):
         warnings.append("front matter: no description (the SEO fallback will be used)")
-    elif len(meta["description"]) > cfg["description_max"]:
+    elif not CONFIRM.search(meta["description"]) and len(meta["description"]) > cfg["description_max"]:
         errors.append(f"description is {len(meta['description'])} chars (max {cfg['description_max']})")
+    leftovers = sorted({n for n in cfg.get("skeleton_names", []) if n in raw})
+    if leftovers:
+        (errors if strict else warnings).append("skeleton placeholder left: " + ", ".join(f"'{n}'" for n in leftovers))
 
     # Block structure
     stack, top_sections = [], 0
@@ -142,6 +152,7 @@ def lint_file(path, cfg, media_dir, strict):
         if n > 1:
             warnings.append(f"'{contrast}' appears {n} times (use the contrast once per page)")
     confirms = CONFIRM.findall(body)
+    front = raw[: len(raw) - len(body)]
     if confirms:
         (errors if strict else warnings).append(f"{len(confirms)} [CONFIRM] chip(s)")
 
@@ -149,7 +160,7 @@ def lint_file(path, cfg, media_dir, strict):
     for m in TEXT_UNITS.finditer(body):
         tag, inner = m.group(1).lower(), visible_text(m.group(2))
         units.append((tag, inner))
-    return errors, warnings, units, confirms, top_sections, len(text.split())
+    return errors, warnings, units, CONFIRM.findall(front) + confirms, top_sections, len(text.split())
 
 
 def main():
@@ -193,7 +204,12 @@ def main():
                 if len(text) >= min_len and tag != "summary":
                     seen[("quote" if tag == "blockquote" else "text", text.lower())].add(rel)
         report.append((rel, errors, warnings, sections, words))
+    theme_dir = root.parent / "wp-content/themes"
+    templates = [t for t in sorted(theme_dir.glob("*/*/*.html")) if t.parent.name in ("templates", "parts")]
     if args.list_confirm:
+        for tpl in templates:
+            for c in CONFIRM.findall(tpl.read_text(encoding="utf-8")):
+                print(f"{tpl.relative_to(root.parent).as_posix()}: {c}")
         return
 
     for rel, errors, warnings, sections, words in report:
@@ -213,6 +229,16 @@ def main():
             total_w += 1
             label = "quote" if kind == "quote" else "text "
             print(f"  · {label} “{text[:80]}{'…' if len(text) > 80 else ''}”\n          {', '.join(where)}")
+    # Chips in theme templates and parts (archive intros, the 404) render on live pages too.
+    theme_chips = [(t.relative_to(root.parent).as_posix(), n) for t in templates if (n := len(CONFIRM.findall(t.read_text(encoding="utf-8"))))]
+    if theme_chips:
+        print("\nTheme templates (edit them in the theme, or in Appearance → Editor):")
+        for rel, n in theme_chips:
+            print(f"  {'✗' if args.strict else '·'} {rel}: {n} [CONFIRM] chip(s)")
+            if args.strict:
+                total_e += 1
+            else:
+                total_w += 1
     if brand_notes:
         print("\nDesign:")
         for note in brand_notes:
