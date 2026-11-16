@@ -21,6 +21,11 @@
 |---|---|---|---|
 | [e.g. best WooCommerce agency for subscription brands] | cited / not | | |
 
+## Campaigns
+| Campaign | This week | To date / goal | Pace | Cost per lead | Best creative |
+|---|---|---|---|---|---|
+| [slug] | | | | | |
+
 ## Search
 - Top queries gaining: [query, position change]
 - New pages indexed / issues: [from Search Console]

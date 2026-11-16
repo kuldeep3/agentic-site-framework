@@ -14,6 +14,28 @@ $asfbase_mega_item = current( array_filter( $asfbase_nav['primary'], static fn( 
 // The "next step" link under the mega panel and at the end of the mobile menu (navigation.php → 'secondary').
 $asfbase_next = wp_parse_args( (array) ( $asfbase_nav['secondary'] ?? array() ), array( 'label' => 'Ways to start', 'url' => '/start/', 'mega' => 'See ways to start →' ) );
 $asfbase_logo = wp_parse_args( (array) asfbase_fact( 'logo', array() ), array( 'mark' => '', 'word' => asfbase_entity( 'name' ) ) );
+
+// Campaign landing pages: logo and one button to the page's form, no menu to wander off into.
+if ( 'landing' === ( $attributes['variant'] ?? '' ) ) :
+	$asfbase_landing_cta = (string) get_post_meta( get_queried_object_id(), '_hm_cta', true ) ?: $asfbase_cta['label'];
+	?>
+<header class="hm-header hm-header--landing">
+	<a class="hm-skip" href="#main">Skip to content</a>
+	<div class="hm-header__bar">
+		<a class="hm-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( asfbase_entity( 'name' ) ); ?>, home">
+			<?php if ( $asfbase_logo['mark'] ) : ?>
+				<span class="hm-logo__mark" aria-hidden="true"><?php echo esc_html( $asfbase_logo['mark'] ); ?></span>
+			<?php endif; ?>
+			<span class="hm-logo__word" aria-hidden="true"><?php echo esc_html( $asfbase_logo['word'] ); ?></span>
+		</a>
+		<div class="hm-header__actions">
+			<a class="hm-btn hm-btn--sm hm-header__cta" href="#form" data-cta="landing-header"><?php echo esc_html( $asfbase_landing_cta ); ?></a>
+		</div>
+	</div>
+</header>
+	<?php
+	return;
+endif;
 ?>
 <header class="hm-header" data-header>
 	<a class="hm-skip" href="#main">Skip to content</a>

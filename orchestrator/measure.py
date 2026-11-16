@@ -13,6 +13,8 @@ Used by `bin/asf report`. Standard library only. Sources, each optional:
                   or a CI auth step with the analytics.readonly scope).
   search_console  clicks, impressions and top queries. Needs GSC_SITE_URL and GOOGLE_ACCESS_TOKEN
                   (webmasters.readonly scope).
+  campaigns       each campaign running that week (asf.json "campaigns"): leads this week and to date
+                  against its goal, cost per lead when spend is recorded, the best creative.
   ai_search       the tracked prompts from asf.json (measurement.prompts). Checking whether AI
                   assistants cite the client is left to the agent (/asf report) or a connector.
 
@@ -59,17 +61,23 @@ def site_url(state):
 
 
 # ── sources ──────────────────────────────────────────────────────────────────────
-def src_wordpress(state, rng):
+def wp_metrics(state, frm, to, campaign=None):
+    """The site's private metrics endpoint (leads), for a date range and optionally one campaign."""
     user, pw = os.environ.get("ASF_WP_USER"), os.environ.get("ASF_WP_APP_PASSWORD")
     if not (user and pw):
         return {"status": "not connected", "how": "Set ASF_WP_USER and ASF_WP_APP_PASSWORD (an Application Password for an admin)."}
     ns = state.get("rest_namespace", "")
-    url = f"{site_url(state)}wp-json/{ns}/metrics?" + urllib.parse.urlencode({"from": rng[0], "to": rng[1]})
+    q = {"from": frm, "to": to, **({"campaign": campaign} if campaign else {})}
+    url = f"{site_url(state)}wp-json/{ns}/metrics?" + urllib.parse.urlencode(q)
     token = base64.b64encode(f"{user}:{pw}".encode()).decode()
     try:
         return {"status": "ok", "data": http_json(url, headers={"Authorization": f"Basic {token}"})}
     except (urllib.error.URLError, ValueError) as e:
         return {"status": "error", "error": str(e)[:200], "url": url}
+
+
+def src_wordpress(state, rng):
+    return wp_metrics(state, rng[0], rng[1])
 
 
 def src_health(state, root, crawl=True):
@@ -163,6 +171,22 @@ def src_ga4(rng):
         return {"status": "error", "error": str(e)[:200]}
 
 
+def ga4_campaign_sessions(names, frm, to):
+    """GA4 sessions per campaign tag (sessionCampaignName), for visit-to-lead rates. Untested against a live property."""
+    prop, token = os.environ.get("GA4_PROPERTY_ID"), os.environ.get("GOOGLE_ACCESS_TOKEN")
+    if not (prop and token and names):
+        return {"status": "not connected"}
+    try:
+        resp = http_json(f"https://analyticsdata.googleapis.com/v1beta/properties/{prop}:runReport", method="POST",
+                         headers={"Authorization": f"Bearer {token}"}, body={
+                             "dateRanges": [{"startDate": frm, "endDate": to}], "dimensions": [{"name": "sessionCampaignName"}],
+                             "metrics": [{"name": "sessions"}],
+                             "dimensionFilter": {"filter": {"fieldName": "sessionCampaignName", "inListFilter": {"values": list(names)}}}})
+        return {"status": "ok", "sessions": {r["dimensionValues"][0]["value"]: int(float(r["metricValues"][0]["value"])) for r in resp.get("rows", [])}}
+    except (urllib.error.URLError, ValueError, KeyError) as e:
+        return {"status": "error", "error": str(e)[:200]}
+
+
 def src_search_console(rng):
     site, token = os.environ.get("GSC_SITE_URL"), os.environ.get("GOOGLE_ACCESS_TOKEN")
     if not (site and token):
@@ -185,6 +209,11 @@ def collect(root, state, to=None, frm=None, crawl=True):
     health = src_health(state, root, crawl)
     launch = health.get("launch", {})
     before = previous_scan(root, rng[1]) if launch.get("status") == "ok" else None
+    wp = src_wordpress(state, rng)
+    camps = []
+    if state.get("campaigns"):
+        import campaigns  # noqa: E402  (beside this file)
+        camps = campaigns.weekly(state, rng, wp["data"]["leads"] if wp.get("status") == "ok" else None)
     if before:
         seen = {f["message"] for g in before["groups"].values() for f in g["findings"]}
         launch["new_since_last_week"] = [f"{name}: {f['message']}" for name, g in launch["groups"].items()
@@ -194,7 +223,8 @@ def collect(root, state, to=None, frm=None, crawl=True):
         "generated": datetime.datetime.now().astimezone().isoformat(timespec="minutes"),
         "baseline": state.get("measurement", {}).get("baseline", {}),
         "sources": {
-            "wordpress": src_wordpress(state, rng),
+            "wordpress": wp,
+            "campaigns": {"status": "ok" if camps else "none running", "rows": camps},
             "health": health,
             "ga4": src_ga4(rng),
             "search_console": src_search_console(rng),
@@ -258,6 +288,13 @@ def draft(data):
             rows = top(cur[key])
             lines += ["", f"### {title}"]
             lines += ["| | Leads |", "|---|---|"] + [f"| {k} | {v} |" for k, v in rows] if rows else ["None this week."]
+    camps = (s.get("campaigns") or {}).get("rows") or []
+    if camps:
+        lines += ["", "## Campaigns", "| Campaign | Status | This week | To date | Pace | Cost per lead | Best creative |", "|---|---|---|---|---|---|---|"]
+        for r in camps:
+            to_date = "–" if r["to_date"] is None else f"{r['to_date']}" + (f" of {r['goal']}" if r.get("goal") else "")
+            lines.append(f"| {r['name']} (`{r['campaign']}`) | {r['status']} | {'–' if r['this_week'] is None else r['this_week']} | {to_date} | {r['pace']} | "
+                         f"{'–' if r['cost_per_lead'] is None else r['cost_per_lead']} | {r['best_creative'] or '–'} |")
     sc = s["search_console"]
     lines += ["", "## Search"]
     if sc.get("status") == "ok":

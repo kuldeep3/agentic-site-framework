@@ -288,31 +288,58 @@
 		}
 	}
 
-	/* Lead capture helpers -------------------------------------------------- */
-	const utm = () => {
+	/* Attribution: where this visit came from ---------------------------------
+	 * The visit's first page (or a later one that arrives with campaign tags) is
+	 * remembered for the session: its path, the outside referrer and the tags.
+	 * Every lead carries it, so an enquiry sent from /contact/ still credits the
+	 * ad or email that brought the visitor in. Where consent is required, nothing
+	 * is stored until window.asfConsent.grant(); a form on the landing page itself
+	 * is attributed either way. */
+	const TAGS = [ 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'gbraid', 'wbraid', 'fbclid', 'msclkid', 'li_fat_id' ];
+	const visit = ( () => {
 		const q = new URLSearchParams( window.location.search );
-		const out = {};
-		[ 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'gclid', 'fbclid' ].forEach( ( k ) => q.get( k ) && ( out[ k ] = q.get( k ) ) );
+		const utm = {};
+		TAGS.forEach( ( k ) => q.get( k ) && ( utm[ k ] = q.get( k ).slice( 0, 100 ) ) );
+		let referrer = '';
 		try {
-			const saved = JSON.parse( sessionStorage.getItem( 'hm_utm' ) || '{}' );
-			if ( Object.keys( out ).length ) sessionStorage.setItem( 'hm_utm', JSON.stringify( out ) );
-			return Object.keys( out ).length ? out : saved;
+			referrer = document.referrer && new URL( document.referrer ).host !== window.location.host ? document.referrer : '';
+		} catch ( err ) {}
+		return { landing: window.location.pathname, referrer, utm };
+	} )();
+	const remember = () => {
+		if ( window.asfConsentRequired && ! window.asfConsentGranted ) return;
+		try {
+			// A new campaign click replaces the remembered touch; otherwise the first page wins.
+			if ( ! sessionStorage.getItem( 'hm_touch' ) || Object.keys( visit.utm ).length ) {
+				sessionStorage.setItem( 'hm_touch', JSON.stringify( visit ) );
+			}
+		} catch ( err ) {}
+	};
+	const touch = () => {
+		try {
+			return JSON.parse( sessionStorage.getItem( 'hm_touch' ) || 'null' ) || visit;
 		} catch ( err ) {
-			return out;
+			return visit;
 		}
 	};
-	utm(); // Remember first-touch UTMs for this session.
+	remember();
+	document.addEventListener( 'asf:consent', remember );
 
-	const send = ( payload ) => fetch( cfg.leadEndpoint, {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify( Object.assign( {
-			page: window.location.pathname,
-			referrer: document.referrer,
-			utm: utm(),
-			elapsed: Math.round( performance.now() / 1000 ),
-		}, payload ) ),
-	} ).then( ( r ) => r.json().then( ( body ) => ( { ok: r.ok, body } ) ) );
+	/* Lead capture ------------------------------------------------------------ */
+	const send = ( payload ) => {
+		const t = touch();
+		return fetch( cfg.leadEndpoint, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify( Object.assign( {
+				page: window.location.pathname,
+				landing: t.landing,
+				referrer: t.referrer,
+				utm: t.utm,
+				elapsed: Math.round( performance.now() / 1000 ),
+			}, payload ) ),
+		} ).then( ( r ) => r.json().then( ( body ) => ( { ok: r.ok, body } ) ) );
+	};
 
 	/* Multi-step brief form ------------------------------------------------ */
 	function briefForm() {

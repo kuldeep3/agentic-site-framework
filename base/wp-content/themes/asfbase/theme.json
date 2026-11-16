@@ -97,9 +97,12 @@
 	},
 	"templateParts": [
 		{ "name": "header", "title": "Header", "area": "header" },
-		{ "name": "footer", "title": "Footer", "area": "footer" }
+		{ "name": "footer", "title": "Footer", "area": "footer" },
+		{ "name": "header-landing", "title": "Header (landing page)", "area": "header" },
+		{ "name": "footer-landing", "title": "Footer (landing page)", "area": "footer" }
 	],
 	"customTemplates": [
-		{ "name": "page-prose", "title": "Text page (title + prose)", "postTypes": [ "page" ] }
+		{ "name": "page-prose", "title": "Text page (title + prose)", "postTypes": [ "page" ] },
+		{ "name": "page-landing", "title": "Campaign landing page (no menu)", "postTypes": [ "page" ] }
 	]
 }

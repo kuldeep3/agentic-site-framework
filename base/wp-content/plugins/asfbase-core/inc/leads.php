@@ -74,7 +74,9 @@ function hm_lead_create( WP_REST_Request $req ) {
 	$data['needs']    = array_map( 'sanitize_key', (array) $req->get_param( 'needs' ) );
 	$data['page']     = esc_url_raw( (string) $req->get_param( 'page' ) );
 	$data['referrer'] = esc_url_raw( (string) $req->get_param( 'referrer' ) );
-	$data['utm']      = array_map( 'sanitize_text_field', array_slice( (array) $req->get_param( 'utm' ), 0, 8 ) );
+	$data['landing']  = esc_url_raw( (string) $req->get_param( 'landing' ) );
+	$data['utm']      = array_map( 'sanitize_text_field', array_slice( (array) $req->get_param( 'utm' ), 0, 12 ) );
+	$data['campaign'] = sanitize_title( (string) ( $data['utm']['utm_campaign'] ?? '' ) );
 
 	$title   = 'newsletter' === $type ? "Newsletter: {$email}" : trim( ( $data['name'] ?? '' ) . ( ! empty( $data['company'] ) ? " · {$data['company']}" : '' ) );
 	$lead_id = wp_insert_post(
@@ -113,7 +115,9 @@ function hm_lead_notify( int $lead_id, array $data ): void {
 		'Budget:   ' . ( $data['budget'] ?? '' ),
 		'Timeline: ' . ( $data['timeline'] ?? '' ),
 		'Page:     ' . $data['page'],
-		'Source:   ' . ( $data['utm']['utm_source'] ?? ( $data['referrer'] ?: 'direct' ) ),
+		'Landed:   ' . ( $data['landing'] ?: $data['page'] ),
+		'Source:   ' . ( $data['utm']['utm_source'] ?? ( $data['referrer'] ?: 'direct' ) ) . ( ! empty( $data['utm']['utm_medium'] ) ? ' / ' . $data['utm']['utm_medium'] : '' ),
+		'Campaign: ' . ( $data['campaign'] ?: '–' ),
 		'',
 		$data['message'] ?? '',
 		'',
@@ -149,7 +153,8 @@ add_action(
 		} elseif ( 'hm_source' === $col ) {
 			$utm = (array) get_post_meta( $id, 'hm_utm', true );
 			$ref = (string) get_post_meta( $id, 'hm_referrer', true );
-			echo esc_html( $utm['utm_source'] ?? ( $ref ? wp_parse_url( $ref, PHP_URL_HOST ) : 'direct' ) );
+			$cmp = (string) get_post_meta( $id, 'hm_campaign', true );
+			echo esc_html( ( $utm['utm_source'] ?? ( $ref ? wp_parse_url( $ref, PHP_URL_HOST ) : 'direct' ) ) . ( $cmp ? " · {$cmp}" : '' ) );
 		} elseif ( str_starts_with( $col, 'hm_' ) ) {
 			echo esc_html( (string) get_post_meta( $id, $col, true ) );
 		}

@@ -10,6 +10,8 @@
     bin/asf set deploy.staging_url https://staging.example.com
     bin/asf report [--to 2026-11-15] [--no-crawl]
                                 collect the week's numbers and draft docs/reports/<date>.md
+    bin/asf campaign new|links|check|list|report|close …
+                                one offer, one landing page, tagged links, results (see campaigns.py)
     bin/asf log                 every sign-off, skip and setting, with dates
     bin/asf init --name "Acme" --kind agency --site-url http://acme.test   (the starter runs this)
 
@@ -183,6 +185,10 @@ def run_check(root, state, check):
         newest = max(files, key=lambda p: p.stat().st_mtime)
         left = PLACEHOLDER.findall(newest.read_text(encoding="utf-8"))
         return not left, "" if not left else f"{newest.name} still has {len(left)} blanks, e.g. [{left[0][:50]}]"
+    if t == "campaigns":
+        sys.path.insert(0, str(HERE))
+        import campaigns  # noqa: E402  (beside this file)
+        return campaigns.gate(root, state, sys.modules[__name__])
     if t == "recent_file":
         files = [Path(f) for f in globlib.glob(str(root / check["glob"]))]
         if not files:
@@ -356,11 +362,43 @@ def cmd_report(args):
     rel = lambda p: p.relative_to(root).as_posix()  # noqa: E731
     print(f"Week {data['from']} → {data['to']}")
     for name, src in data["sources"].items():
-        print(f"  {name:<15} {src.get('status')}" + (f"  ({src.get('how') or src.get('error')})" if src.get("status") not in ("ok", "for the agent") else ""))
+        print(f"  {name:<15} {src.get('status')}" + (f"  ({src.get('how') or src.get('error')})" if src.get("status") not in ("ok", "for the agent", "none running") else ""))
     print(f"Data:  {rel(data_path)}")
     print(f"Draft: {rel(md_path)}" + ("" if wrote else "  (already existed; kept. Use --force to redraft)"))
     print("Next: write \"The three things\" and fill the [blanks] from the data, review, then send it to the client.")
     state["log"].append({"at": now(), "event": f"report collected for {data['from']}–{data['to']}", "note": rel(md_path)})
+    save_state(root, state)
+
+
+def cmd_campaign(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import campaigns  # noqa: E402  (beside this file)
+    core = sys.modules[__name__]
+    if args.action != "list" and not args.slug:
+        sys.exit(f"`bin/asf campaign {args.action} <slug>`")
+    if args.action == "new":
+        campaigns.new(root, state, args, core)
+    elif args.action == "links":
+        campaigns.links(root, state, args, core)
+    elif args.action == "list":
+        campaigns.listing(state)
+        return
+    elif args.action == "check":
+        marks = {"ok": "✓", "warning": "·", "error": "✗"}
+        results = campaigns.check(root, state, args.slug, core, args.url)
+        for level, msg in results:
+            print(f"  {marks[level]} {msg}")
+        errors = sum(1 for lvl, _ in results if lvl == "error")
+        print(f"{args.slug}: {errors} error(s) · {sum(1 for lvl, _ in results if lvl == 'warning')} warning(s)")
+        sys.exit(1 if errors else 0)
+    elif args.action == "report":
+        campaigns.report(root, state, args.slug, args.write)
+        return
+    elif args.action == "close":
+        if not args.outcome:
+            sys.exit("--outcome keep|redirect|unpublish")
+        campaigns.close(root, state, args, core)
     save_state(root, state)
 
 
@@ -381,10 +419,16 @@ def main():
     p = sub.add_parser("skip"); p.add_argument("gate"); p.add_argument("check"); p.add_argument("--reason", required=True)
     p = sub.add_parser("set"); p.add_argument("key"); p.add_argument("value")
     p = sub.add_parser("report"); p.add_argument("--to"); p.add_argument("--from", dest="frm"); p.add_argument("--no-crawl", action="store_true"); p.add_argument("--force", action="store_true")
+    p = sub.add_parser("campaign"); p.add_argument("action", choices=["new", "links", "check", "list", "report", "close"]); p.add_argument("slug", nargs="?")
+    p.add_argument("--name"); p.add_argument("--landing"); p.add_argument("--start"); p.add_argument("--end")
+    p.add_argument("--goal", type=int); p.add_argument("--budget", type=float); p.add_argument("--channels"); p.add_argument("--cta", default="Get started")
+    p.add_argument("--index", action="store_true", help="let search engines index the landing page (default: noindex)")
+    p.add_argument("--content", help="creative names for utm_content, comma-separated"); p.add_argument("--url", help="check this site instead of the recorded one")
+    p.add_argument("--write", action="store_true"); p.add_argument("--outcome", choices=["keep", "redirect", "unpublish"]); p.add_argument("--to"); p.add_argument("--note")
     sub.add_parser("log")
     a = ap.parse_args()
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
-     "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "log": cmd_log}[a.cmd](a)
+     "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log}[a.cmd](a)
 
 
 if __name__ == "__main__":

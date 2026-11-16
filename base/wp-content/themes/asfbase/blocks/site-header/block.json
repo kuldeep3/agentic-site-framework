@@ -5,7 +5,10 @@
 	"title": "ASF Base Site header",
 	"category": "theme",
 	"icon": "align-wide",
-	"description": "Logo, primary navigation with the Services mega panel, and the mobile menu. Links are set in inc/navigation.php.",
+	"description": "Logo, primary navigation with the Services mega panel, and the mobile menu. Links are set in inc/navigation.php. The landing variant (campaign pages) shows only the logo and one button to the page's form.",
+	"attributes": {
+		"variant": { "type": "string", "enum": [ "default", "landing" ], "default": "default" }
+	},
 	"supports": { "html": false, "multiple": false, "reusable": false },
 	"textdomain": "asfbase",
 	"editorScript": "asfbase-editor-blocks",

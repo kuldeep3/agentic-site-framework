@@ -16,6 +16,9 @@ seo_title: Example Service Optimization | ASF Base   (≤ 60 chars)
 description: Meta description, written as an answer. (≤ 155 chars)
 order: 5
 dark_hero: true                                    ← only if the first section is .hm-dark
+template: page-landing                             ← optional: page-prose (text pages) or page-landing (campaign pages: no menu)
+cta: Get the audit                                 ← page-landing only: the header button, which jumps to #form
+noindex: true                                      ← optional: keep the page out of search (campaign pages default to it)
 -->
 <!-- wp:group {"tagName":"section","align":"full","className":"hm-section …","layout":{"type":"default"}} -->
 <section class="wp-block-group alignfull hm-section …"> … </section>

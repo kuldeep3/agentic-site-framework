@@ -3,7 +3,7 @@
 This project is built with the **Agentic Site Framework** (`docs/framework/`). Read `docs/framework/README.md` and `docs/framework/PRINCIPLES.md` before doing anything else.
 
 ## Start here
-Run **`/asf`**: it shows where the project is (stage and gate), what the gate still needs, and what to do next. `/asf run` works the current stage up to its gate; `/asf approve G1` records a sign-off after the lead confirms. State lives in `asf.json` (via `bin/asf`); never edit it by hand.
+Run **`/asf`**: it shows where the project is (stage and gate), what the gate still needs, and what to do next. `/asf run` works the current stage up to its gate; `/asf approve G1` records a sign-off after the lead confirms. After launch, `/asf report` is the weekly report and `/asf campaign new …` starts a campaign (one landing page, tagged links, results). State lives in `asf.json` (via `bin/asf`); never edit it by hand.
 
 ## How work runs here
 - Work goes stage by stage: Truth → Story → System → Ship → Run (`docs/framework/stages/`). **Stop at each gate** and ask the lead to sign it off. Don't start a stage whose inputs don't exist yet (no copy before `docs/truth.md`; no build before `docs/01-strategy.md` is approved).

@@ -287,7 +287,8 @@
       "doc": "docs/framework/stages/5-run.md",
       "agents": [],
       "prompts": [
-        "09-weekly-report"
+        "09-weekly-report",
+        "10-campaign"
       ],
       "repeat": "weekly",
       "checks": [
@@ -304,6 +305,12 @@
           "run": "python3 docs/framework/qa/launch.py {deploy.production_url} --env production --only security,launch",
           "label": "Production scan: no security or launch errors (rechecked weekly)",
           "hint": "Fix what launch.py reports: a plugin update, a host change or an expiring certificate can undo launch work"
+        },
+        {
+          "id": "campaigns",
+          "type": "campaigns",
+          "label": "Live campaigns pass their checks; finished ones are closed",
+          "hint": "`bin/asf campaign check <slug>` shows what's wrong; close finished ones with `bin/asf campaign close <slug> --outcome keep|redirect|unpublish`"
         },
         {
           "id": "analytics",

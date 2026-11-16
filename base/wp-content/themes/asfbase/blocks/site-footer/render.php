@@ -16,6 +16,23 @@ $asfbase_cta_copy = wp_parse_args( (array) asfbase_fact( 'footer_cta', array() )
 // The primary button goes to footer_cta['url'] when set, else the booking link; only off-site links open a new tab.
 $asfbase_cta_url      = $asfbase_cta_copy['url'] ? $asfbase_cta_copy['url'] : $asfbase_booking;
 $asfbase_cta_external = (bool) preg_match( '#^https?://#', $asfbase_cta_url ) && ! str_starts_with( $asfbase_cta_url, home_url() );
+
+// Campaign landing pages: the legal line only (the privacy policy must stay one click away).
+if ( 'landing' === ( $attributes['variant'] ?? '' ) ) :
+	?>
+<footer class="hm-footer hm-footer--landing">
+	<div class="hm-footer__legal">
+		<p>© <?php echo esc_html( gmdate( 'Y' ) . ' ' . asfbase_entity( 'name' ) . '. ' . (string) asfbase_fact( 'footer_note', '' ) ); ?></p>
+		<ul>
+			<?php foreach ( $asfbase_nav['legal'] as $asfbase_link ) : ?>
+				<li><a href="<?php echo esc_url( asfbase_url( $asfbase_link['url'] ) ); ?>"><?php echo esc_html( $asfbase_link['label'] ); ?></a></li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+</footer>
+	<?php
+	return;
+endif;
 ?>
 <footer class="hm-footer">
 	<?php if ( $asfbase_show_cta ) : ?>

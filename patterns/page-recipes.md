@@ -55,6 +55,18 @@ Hero (what you'll get, in writing) → what we look at → sample of the output 
 ## Thank-you (1)
 What happens next and when, the booking link, and one case study to read while they wait.
 
+## Campaign landing page (6)
+Template `page-landing` (logo, one button to the form, legal links only). Made by `bin/asf campaign new`; playbook in [`campaigns.md`](campaigns.md).
+
+| # | Section | Component | Idea |
+|---|---|---|---|
+| 1 | Hero | `hm-page-hero` + one button to `#form` + `hm-trust` | The ad's promise as the H1, word for word; who it's for and what they get; one proof line |
+| 2 | What you get | `hm-head` + checks list | Three concrete deliverables and when they arrive |
+| 3 | Proof | `hm-testimonial` | One real quote that backs the promise |
+| 4 | How it works | `hm-steps` | Three steps from asking to having it |
+| 5 | The form | section `#form` + `hm/brief-form` | The ask, the reassurance (reply time, who replies), the form on the page |
+| 6 | Questions | `hm-faq` | The three objections: price, time, commitment |
+
 ## Legal pages
 Carry over verbatim from the live site. Changing legal text is the client's lawyer's job, not ours. Mark new drafts clearly as drafts.
 

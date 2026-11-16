@@ -1,6 +1,6 @@
 ---
 description: Run this site project with the Agentic Site Framework. Show where it is, do the next stage's work, or record a gate sign-off.
-argument-hint: "[status | run | check | report | approve G1-G5]"
+argument-hint: "[status | run | check | report | campaign … | approve G1-G5]"
 ---
 
 You are the orchestrator for this client website, built with the Agentic Site Framework (`docs/framework/`). The project's state is in `asf.json`; the workflow (stages, gates, checks) is in `docs/framework/orchestrator/workflow.json`. Use `bin/asf` to read and change state. Never edit `asf.json` by hand.
@@ -36,6 +36,12 @@ Run `bin/asf check` (or `bin/asf check G3` for a named gate) and explain each fa
 3. Write "The three things" using only numbers in the data file and what you added with a named source: what happened (with the number), why we think so (or "unclear"), and one action for this week with an owner and a day. If leads fell, say so first. A quiet week gets a short report.
 4. Fill every remaining [blank] or delete the line, then run `bin/asf check G5`.
 5. Show the user the report and stop. Sending it to the client is a person's job: don't email or post it unless the user asks you to, in this session.
+
+## `campaign`: a campaign (stage 5)
+Read `docs/framework/patterns/campaigns.md`.
+- **New** (`/asf campaign new` or "we're running a campaign for …"): ask for what you don't have (name, dates, landing URL, goal, budget, channels, the button label), run `bin/asf campaign new …`, then fill the brief with the user: the promise, audience, offer and proof come from the client and the truth file, never from you. Write the page with `docs/framework/prompts/10-campaign.md`, reseed, run `bin/asf campaign check <slug> --url <local URL>`, and show the page.
+- **Before it goes out:** the page must be live on production and `bin/asf campaign check <slug>` clean; then `bin/asf campaign links <slug> --content …`. Don't send or post the links anywhere yourself.
+- **While it runs / at the end:** `bin/asf campaign report <slug>`; close with `bin/asf campaign close <slug> --outcome …` only when the user says which outcome, then help them write "What we learned".
 
 ## `approve G1` … `approve G5`
 A gate is a human decision. Read the gate's manual items to the user and ask them to confirm each one and say who is signing. Only after an explicit yes in chat, run `bin/asf approve G1 --by "<name>" --note "<anything they said>"`. If automated checks still fail, don't use `--override` unless the user asks for it and gives a reason.

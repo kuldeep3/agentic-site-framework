@@ -17,7 +17,8 @@
  *   seo_title: WooCommerce Performance Optimization | Agency Name
  *   description: Meta description (≤155 chars).
  *   excerpt: Card/summary text (case studies). Defaults to description.
- *   template: page-prose                       ← optional block template
+ *   template: page-prose                       ← optional block template (page-landing: campaign page, no menu)
+ *   cta: Get the audit                         ← landing pages: the header button's label (it jumps to #form)
  *   order: 3                                   ← menu_order
  *   noindex: true                              ← optional
  *   dark_hero: true                            ← header starts light-on-dark
@@ -151,6 +152,7 @@ function hm_seed_upsert( string $type, array $meta, string $content, array $medi
 	update_post_meta( $id, '_hm_meta_description', $meta['description'] ?? '' );
 	update_post_meta( $id, '_hm_noindex', ! empty( $meta['noindex'] ) );
 	update_post_meta( $id, '_hm_dark_hero', ! empty( $meta['dark_hero'] ) );
+	update_post_meta( $id, '_hm_cta', $meta['cta'] ?? '' ); // Landing pages: the header button's label.
 	// Same values for Rank Math, so a staging site with Rank Math is ready too.
 	update_post_meta( $id, 'rank_math_title', $meta['seo_title'] ?? '' );
 	update_post_meta( $id, 'rank_math_description', $meta['description'] ?? '' );

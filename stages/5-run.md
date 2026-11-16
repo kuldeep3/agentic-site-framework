@@ -22,6 +22,15 @@ Run **`/asf report`** in Claude Code. Prompt: [`prompts/09-weekly-report.md`](..
 3. It writes **three things**: what happened, why we think so, and what we'll do this week, using only sourced numbers.
 4. A person reviews and sends it. Every week, even when nothing changed. A quiet week gets a short report.
 
+## Campaigns (when the client runs one)
+A campaign gets one landing page, one offer, tagged links and a result: [`patterns/campaigns.md`](../patterns/campaigns.md), prompt [`10-campaign.md`](../prompts/10-campaign.md).
+
+1. `bin/asf campaign new <slug> --name … --landing /… --start … --end … --goal … --channels google/cpc,…` writes the brief and the page skeleton.
+2. Fill the brief with the client (the promise, the offer, the proof), write the page with prompt 10, publish it before the start date.
+3. `bin/asf campaign check <slug>` (brief, copy, live page, message match, form, tracking, accessibility, performance), then `bin/asf campaign links <slug> --content …` for the only links anyone should use.
+4. While it runs: the weekly report's Campaigns table, `bin/asf campaign report <slug>` for detail, spend recorded with `bin/asf set campaigns.<slug>.spend …`.
+5. When it ends: `bin/asf campaign close <slug> --outcome keep|redirect|unpublish`, and write "What we learned" in the results file.
+
 ## Monthly
 - **One improvement proposal**, sized and priced: a new case study, a landing page for a query that's gaining, a page test, a new offer page. This is how the engagement grows.
 - Content: one case study or one answer-first article mapped to an ICP query.
@@ -35,6 +44,7 @@ Run **`/asf report`** in Claude Code. Prompt: [`prompts/09-weekly-report.md`](..
 
 ## Gate G5 (every week)
 - [ ] Production scan clean (`launch.py --env production --only security,launch`; checked by `bin/asf check G5`)
+- [ ] Every live campaign passes `bin/asf campaign check`; finished ones are closed
 - [ ] Report sent on the agreed day
 - [ ] Every number in it has a source (an analytics view, a lead record or a screenshot)
 - [ ] One concrete action for the coming week

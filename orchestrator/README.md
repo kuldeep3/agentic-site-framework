@@ -37,7 +37,7 @@ bin/asf next
 bin/asf approve G1 --by "Jane Lead" --note "Kickoff signed by the founder"
 ```
 
-Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no current site"`, `bin/asf set deploy.staging_url https://…`, `bin/asf log`.
+Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no current site"`, `bin/asf set deploy.staging_url https://…`, `bin/asf campaign …` (below), `bin/asf log`.
 
 ## Gates
 | Gate | Checked automatically | Confirmed by a person |
@@ -46,7 +46,7 @@ Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no curren
 | **G2 Story** | Strategy and IA filled; the client's own words choosing the message recorded; ≥ 3 briefs; every brief ≤ 8 sections | Route chosen as "defines our business"; competitor test; one idea, one home |
 | **G3 System** | Client facts filled; design brief and three directions written; the client's own design layer in place (not `ASF:UNBRANDED`); content lint clean | Anti-AI-look review; not a re-skin; client approved pages in the browser |
 | **G4 Ship** | Strict lint (no `[CONFIRM]` left); crawl clean; staging URL recorded; `launch.py`: accessibility (local), then security, performance and launch settings on staging; Lighthouse 90+ (public staging) | Responsive, contrast and keyboard, editor, form and email end to end, backups with a tested restore, uptime monitoring, admins on 2FA, written sign-off |
-| **G5 Run** (weekly) | Production URL recorded; production scan (security, launch settings) clean; analytics recorded; a report in the last 7 days | Report sent; one concrete action |
+| **G5 Run** (weekly) | Production URL recorded; production scan (security, launch settings) clean; live campaigns pass their checks and finished ones are closed; analytics recorded; a report in the last 7 days | Report sent; one concrete action |
 
 `approve` is refused while automated checks fail. `--override "reason"` exists for real exceptions, and the reason is kept in the log.
 
@@ -69,6 +69,20 @@ Privacy: analytics never loads on local sites, and defaults to Consent Mode "den
 **Running it every week:**
 - **Unattended numbers:** copy `weekly-report.yml` to the project as `.github/workflows/asf-weekly-report.yml` and add the secrets. Every Monday it opens a pull request with the data and the draft.
 - **Unattended narrative too:** schedule a Claude Code routine on the project that runs `/asf report` weekly (`/schedule` in Claude Code).
+
+## Campaigns (stage 5)
+`campaigns.py`, through `bin/asf campaign`. Playbook: [`patterns/campaigns.md`](../patterns/campaigns.md).
+
+| Command | What it does |
+|---|---|
+| `new <slug> --name … --landing /… --start … --end … [--goal 20] [--budget 3000] [--channels google/cpc,…] [--cta "…"] [--index]` | Records the campaign, writes `docs/campaigns/<slug>.md` (the brief) and `content/pages/<landing>.html` (a six-section page on the `page-landing` template, noindex unless `--index`) |
+| `links <slug> [--content a,b] [--channels …]` | The tagged link for every channel × creative, written into the brief. Tags are normalised (lowercase, hyphens) |
+| `check <slug> [--url …]` | Brief filled; copy confirmed; page live; H1 matches the promise; indexing as decided; form and lead script on the page; few links away; `launch.py` accessibility and performance on that page; links issued; spend recorded for paid channels; not left open after it ends |
+| `report <slug> [--write]` | Leads to date against the goal and pace, by creative, source, medium, landing page, enquiry page and day; cost per lead; GA4 sessions and visit-to-lead rate when connected |
+| `close <slug> --outcome keep\|redirect\|unpublish [--to /…] [--note …]` | Records the outcome, adds the 301 to the plugin's redirect map, writes the results file when the Application Password is set |
+| `list` | Every campaign with its status (planned, live, ended, closed) |
+
+Leads are matched to a campaign by their `utm_campaign` tag, which the theme carries from the landing page to whichever page the form is sent from. The metrics endpoint takes `?campaign=<slug>`. The weekly report adds a Campaigns table, and G5's `campaigns` check runs `check` on every live campaign.
 
 ## What plugs in next
 Deployment is already a stage with checks (`deploy.staging_url`, `deploy.production_url`); today you deploy by hand and record it with `asf set`. A deploy adapter will do it and set the same values, so the workflow doesn't change.

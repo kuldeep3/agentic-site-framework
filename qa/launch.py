@@ -155,6 +155,7 @@ class Doc(HTMLParser):
         self.images = []                     # (attrs, index, in_main)
         self.iframes = []
         self.anchors = []                    # (attrs, text, has_img_alt)
+        self.anchor_zones = []               # "header", "footer" or "body", one per anchor
         self.buttons = []                    # (attrs, text)
         self.controls = []                   # (tag, attrs, labelled_by_wrapper)
         self.label_for = set()
@@ -244,6 +245,7 @@ class Doc(HTMLParser):
             return
         if tag == "a" and "href" in a:
             self.anchors.append((a, text, el.get("img_alt", "")))
+            self.anchor_zones.append("header" if self._within("header") else "footer" if self._within("footer") else "body")
         elif tag == "button" or (tag == "a" and a.get("role") == "button"):
             self.buttons.append((a, text + " " + el.get("img_alt", "")))
         elif re.fullmatch(r"h[1-6]", tag):
@@ -902,7 +904,7 @@ def find_state():
     return {}
 
 
-def run(base, env=None, only=None, cfg_path=None, namespace=None, insecure=False, quiet=False):
+def run(base, env=None, only=None, cfg_path=None, namespace=None, insecure=False, quiet=False, pages=None):
     base = base.rstrip("/") + "/"
     env = env or detect_env(base)
     cfg = load_cfg(cfg_path)
@@ -919,10 +921,10 @@ def run(base, env=None, only=None, cfg_path=None, namespace=None, insecure=False
     ctx = {"http": http, "base": base, "env": env, "cfg": cfg, "home": home, "facts": rep.facts, "rest_namespace": namespace,
            "env_hosts": {k: host_of(v) for k, v in (("local", state.get("site_url")), ("staging", dep.get("staging_url")), ("production", dep.get("production_url"))) if v}}
     sm = sitemap_urls(http, base)
-    ctx["sample"] = sample_pages(http, base, sm, cfg["pages"])
+    ctx["sample"] = [urllib.parse.urljoin(base, p) for p in pages] if pages else sample_pages(http, base, sm, cfg["pages"])
     every = [base] + [u for g in sm for u in g if u.rstrip("/") != base.rstrip("/")]
-    ctx["all_pages"] = list(dict.fromkeys(every))[: cfg["crawl_max_pages"]] if "accessibility" in groups else ctx["sample"]
-    wanted = list(dict.fromkeys(ctx["sample"] + ctx["all_pages"]))
+    ctx["all_pages"] = list(dict.fromkeys(every))[: cfg["crawl_max_pages"]] if "accessibility" in groups and not pages else ctx["sample"]
+    wanted = list(dict.fromkeys([base] + ctx["sample"] + ctx["all_pages"]))
     with cf.ThreadPoolExecutor(max_workers=6) as pool:
         resps = dict(zip(wanted, pool.map(lambda u: http.get(u), wanted)))
     ctx["pages_resp"] = {u: r for u, r in resps.items() if r.status == 200}
@@ -972,6 +974,7 @@ def main():
     ap.add_argument("--config", help="QA config (default: config.json next to this script)")
     ap.add_argument("--rest-namespace", help="the core plugin's REST namespace (default: from asf.json)")
     ap.add_argument("--insecure", action="store_true", help="don't verify TLS (self-signed local certificates)")
+    ap.add_argument("--pages", help="comma-separated paths to check instead of sampling the sitemap (performance, accessibility), e.g. /spring-audit/")
     ap.add_argument("--json", help="also write the results as JSON to this file (- for stdout only)")
     a = ap.parse_args()
     if not a.url or a.url.startswith("{"):
@@ -980,7 +983,8 @@ def main():
     bad = [g for g in only or [] if g not in GROUPS + ["lighthouse"]]
     if bad:
         sys.exit(f"Unknown group(s): {', '.join(bad)}")
-    result = run(a.url, a.env, only, a.config, a.rest_namespace, a.insecure)
+    pages = [p.strip() for p in a.pages.split(",") if p.strip()] if a.pages else None
+    result = run(a.url, a.env, only, a.config, a.rest_namespace, a.insecure, pages=pages)
     if a.json == "-":
         print(json.dumps(result, indent=2, ensure_ascii=False))
         sys.exit(1 if any(g["errors"] for g in result["groups"].values()) else 0)

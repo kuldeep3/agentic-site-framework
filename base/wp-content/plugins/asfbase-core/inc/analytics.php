@@ -61,7 +61,9 @@ add_action(
 			'wait_for_update'    => 500,
 		);
 		echo "<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('consent','default'," . wp_json_encode( $defaults ) . ');'
-			. "window.asfConsent={grant:function(){gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});}};</script>\n";
+			. 'window.asfConsentRequired=' . ( 'required' === $c['consent'] ? 'true' : 'false' ) . ';'
+			// grant() also lets the theme remember where the visit came from (campaign attribution).
+			. "window.asfConsent={grant:function(){gtag('consent','update',{ad_storage:'granted',ad_user_data:'granted',ad_personalization:'granted',analytics_storage:'granted'});window.asfConsentGranted=true;document.dispatchEvent(new Event('asf:consent'));}};</script>\n";
 		if ( $c['gtm'] ) {
 			printf(
 				"<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer',%s);</script>\n",

@@ -5,9 +5,10 @@
 	"title": "ASF Base Site footer",
 	"category": "theme",
 	"icon": "align-wide",
-	"description": "Closing call-to-action, footer navigation, newsletter and legal links. Links are set in inc/navigation.php.",
+	"description": "Closing call-to-action, footer navigation, newsletter and legal links. Links are set in inc/navigation.php. The landing variant (campaign pages) shows only the legal line.",
 	"attributes": {
-		"showCta": { "type": "boolean", "default": true }
+		"showCta": { "type": "boolean", "default": true },
+		"variant": { "type": "string", "enum": [ "default", "landing" ], "default": "default" }
 	},
 	"supports": { "html": false, "multiple": false, "reusable": false },
 	"textdomain": "asfbase",
