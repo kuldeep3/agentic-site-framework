@@ -1,0 +1,58 @@
+# Weekly measurement for a client site, on GitHub Actions.
+# Copy to the client project as .github/workflows/asf-weekly-report.yml.
+#
+# Every Monday it collects last week's numbers (`bin/asf report`) and opens a pull request with
+# the data file and a draft report. The draft's narrative ("The three things") is then written by
+# the agent (`/asf report` in Claude Code, or a scheduled Claude Code routine) and reviewed by a
+# person before anything is sent to the client.
+#
+# Repository secrets (Settings → Secrets and variables → Actions):
+#   ASF_WP_USER, ASF_WP_APP_PASSWORD   an admin user and an Application Password on the live site
+#   GA4_PROPERTY_ID, GSC_SITE_URL      optional, with GOOGLE_ACCESS_TOKEN from an auth step below
+name: Weekly site report
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Optional: a Google access token for GA4 and Search Console (Workload Identity Federation).
+      # - uses: google-github-actions/auth@v2
+      #   id: gauth
+      #   with:
+      #     workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+      #     service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      #     token_format: access_token
+      #     access_token_scopes: https://www.googleapis.com/auth/analytics.readonly,https://www.googleapis.com/auth/webmasters.readonly
+      - name: Collect and draft
+        env:
+          ASF_WP_USER: ${{ secrets.ASF_WP_USER }}
+          ASF_WP_APP_PASSWORD: ${{ secrets.ASF_WP_APP_PASSWORD }}
+          GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
+          GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+          # GOOGLE_ACCESS_TOKEN: ${{ steps.gauth.outputs.access_token }}
+        run: python3 docs/framework/orchestrator/asf.py report
+      - name: Open a pull request with the draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          WEEK=$(ls -t docs/reports/*.md | head -1 | xargs basename .md)
+          git config user.name "weekly-report"
+          git config user.email "weekly-report@users.noreply.github.com"
+          git checkout -b "report/$WEEK"
+          git add docs/reports asf.json
+          git commit -m "Weekly report draft: week ending $WEEK"
+          git push -u origin "report/$WEEK"
+          gh pr create --title "Weekly report: week ending $WEEK" --body "Numbers collected by \`bin/asf report\`. Write \"The three things\" (\`/asf report\` in Claude Code), review, then send to the client."

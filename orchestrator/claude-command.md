@@ -1,6 +1,6 @@
 ---
 description: Run this site project with the Agentic Site Framework. Show where it is, do the next stage's work, or record a gate sign-off.
-argument-hint: "[status | run | check | approve G1-G5]"
+argument-hint: "[status | run | check | report | approve G1-G5]"
 ---
 
 You are the orchestrator for this client website, built with the Agentic Site Framework (`docs/framework/`). The project's state is in `asf.json`; the workflow (stages, gates, checks) is in `docs/framework/orchestrator/workflow.json`. Use `bin/asf` to read and change state. Never edit `asf.json` by hand.
@@ -26,6 +26,15 @@ If a check can't apply to this project (for example, no current website to audit
 
 ## `check`
 Run `bin/asf check` (or `bin/asf check G3` for a named gate) and explain each failure with its fix.
+
+## `report`: this week's measurement (stage 5, weekly)
+1. Run `bin/asf report`. It collects the week's numbers into `docs/reports/data/<date>.json` (leads from the site's private metrics endpoint, site health and a crawl, and GA4 and Search Console when their environment variables are set) and drafts `docs/reports/<date>.md`.
+2. Fill what the script couldn't:
+   - If a source says "not connected" and a connector for it is available in this session (analytics, Search Console, rank or AI-visibility tracking), pull the same week's numbers through it, add them to the report and name the source.
+   - For each tracked prompt under "AI search", check whether the client is cited and where. Say how you checked (an AI-visibility connector, or a web search, which is only a proxy). If you couldn't check, write "not checked", never a guess.
+3. Write "The three things" using only numbers in the data file and what you added with a named source: what happened (with the number), why we think so (or "unclear"), and one action for this week with an owner and a day. If leads fell, say so first. A quiet week gets a short report.
+4. Fill every remaining [blank] or delete the line, then run `bin/asf check G5`.
+5. Show the user the report and stop. Sending it to the client is a person's job: don't email or post it unless the user asks you to, in this session.
 
 ## `approve G1` … `approve G5`
 A gate is a human decision. Read the gate's manual items to the user and ask them to confirm each one and say who is signing. Only after an explicit yes in chat, run `bin/asf approve G1 --by "<name>" --note "<anything they said>"`. If automated checks still fail, don't use `--override` unless the user asks for it and gives a reason.

@@ -32,7 +32,11 @@
 	const $$ = ( sel, ctx = document ) => Array.from( ctx.querySelectorAll( sel ) );
 
 	window.dataLayer = window.dataLayer || [];
-	const push = ( event, data = {} ) => window.dataLayer.push( Object.assign( { event }, data ) );
+	const push = ( event, data = {} ) => {
+		window.dataLayer.push( Object.assign( { event }, data ) );
+		// GA4 without GTM: the plugin's analytics module sets asfGtagEvents so these reach GA4 as events too.
+		if ( window.asfGtagEvents && typeof window.gtag === 'function' ) window.gtag( 'event', event, data );
+	};
 
 	/* Header ------------------------------------------------------------- */
 	function header() {

@@ -8,6 +8,8 @@
                                 record a human sign-off; refused while automated checks fail
     bin/asf skip G1 audit --reason "no current site"
     bin/asf set deploy.staging_url https://staging.example.com
+    bin/asf report [--to 2026-11-15] [--no-crawl]
+                                collect the week's numbers and draft docs/reports/<date>.md
     bin/asf log                 every sign-off, skip and setting, with dates
     bin/asf init --name "Acme" --kind agency --site-url http://acme.test   (the starter runs this)
 
@@ -170,6 +172,13 @@ def run_check(root, state, check):
     if t == "state_set":
         v = dotted_get(state, check["key"])
         return bool(v), str(v) if v else f"`asf set {check['key']} …` not done"
+    if t == "latest_no_placeholders":
+        files = [Path(f) for f in globlib.glob(str(root / check["glob"]))]
+        if not files:
+            return False, "none yet"
+        newest = max(files, key=lambda p: p.stat().st_mtime)
+        left = PLACEHOLDER.findall(newest.read_text(encoding="utf-8"))
+        return not left, "" if not left else f"{newest.name} still has {len(left)} blanks, e.g. [{left[0][:50]}]"
     if t == "recent_file":
         files = [Path(f) for f in globlib.glob(str(root / check["glob"]))]
         if not files:
@@ -199,7 +208,7 @@ def cmd_init(args):
         sys.exit(f"{STATE_FILE} already exists.")
     state = {
         "framework": "Agentic Site Framework",
-        "client": args.name, "kind": args.kind, "site_url": args.site_url,
+        "client": args.name, "kind": args.kind, "site_url": args.site_url, "rest_namespace": args.rest_namespace,
         "created": now(), "stage": "truth",
         "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
     }
@@ -325,10 +334,30 @@ def cmd_skip(args):
 
 def cmd_set(args):
     root = find_root(); state = load_state(root)
-    dotted_set(state, args.key, args.value)
+    try:  # lists and numbers (e.g. measurement.prompts) can be given as JSON
+        value = json.loads(args.value) if args.value[:1] in "[{0123456789" else args.value
+    except json.JSONDecodeError:
+        value = args.value
+    dotted_set(state, args.key, value)
     state["log"].append({"at": now(), "event": f"set {args.key}", "note": args.value})
     save_state(root, state)
     print(f"{args.key} = {args.value}")
+
+
+def cmd_report(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import measure  # noqa: E402  (beside this file)
+    data, data_path, md_path, wrote = measure.run(root, state, args.to, args.frm, not args.no_crawl, args.force)
+    rel = lambda p: p.relative_to(root).as_posix()  # noqa: E731
+    print(f"Week {data['from']} → {data['to']}")
+    for name, src in data["sources"].items():
+        print(f"  {name:<15} {src.get('status')}" + (f"  ({src.get('how') or src.get('error')})" if src.get("status") not in ("ok", "for the agent") else ""))
+    print(f"Data:  {rel(data_path)}")
+    print(f"Draft: {rel(md_path)}" + ("" if wrote else "  (already existed; kept. Use --force to redraft)"))
+    print("Next: write \"The three things\" and fill the [blanks] from the data, review, then send it to the client.")
+    state["log"].append({"at": now(), "event": f"report collected for {data['from']}–{data['to']}", "note": rel(md_path)})
+    save_state(root, state)
 
 
 def cmd_log(args):
@@ -340,17 +369,18 @@ def cmd_log(args):
 def main():
     ap = argparse.ArgumentParser(prog="asf", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    p = sub.add_parser("init"); p.add_argument("--name", required=True); p.add_argument("--kind", default="agency"); p.add_argument("--site-url", default="")
+    p = sub.add_parser("init"); p.add_argument("--name", required=True); p.add_argument("--kind", default="agency"); p.add_argument("--site-url", default=""); p.add_argument("--rest-namespace", default="")
     sub.add_parser("status")
     p = sub.add_parser("check"); p.add_argument("gate", nargs="?"); p.add_argument("--json", action="store_true")
     p = sub.add_parser("next"); p.add_argument("--json", action="store_true")
     p = sub.add_parser("approve"); p.add_argument("gate"); p.add_argument("--by", required=True); p.add_argument("--note"); p.add_argument("--override")
     p = sub.add_parser("skip"); p.add_argument("gate"); p.add_argument("check"); p.add_argument("--reason", required=True)
     p = sub.add_parser("set"); p.add_argument("key"); p.add_argument("value")
+    p = sub.add_parser("report"); p.add_argument("--to"); p.add_argument("--from", dest="frm"); p.add_argument("--no-crawl", action="store_true"); p.add_argument("--force", action="store_true")
     sub.add_parser("log")
     a = ap.parse_args()
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
-     "skip": cmd_skip, "set": cmd_set, "log": cmd_log}[a.cmd](a)
+     "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "log": cmd_log}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -158,6 +158,7 @@ def reset_client_files(t, a, fw, ref):
     shutil.copy(fw / "orchestrator/claude-command.md", commands / "asf.md")
     state = {
         "framework": "Agentic Site Framework", "client": a.name, "kind": a.kind, "site_url": f"http://{a.slug}.test",
+        "rest_namespace": f"{a.slug}/v1",
         "created": datetime.datetime.now().astimezone().isoformat(timespec="minutes"), "stage": "truth",
         "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
     }

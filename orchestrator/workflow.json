@@ -7,16 +7,69 @@
       "title": "Truth",
       "question": "What is true about this business, and what can we prove in public?",
       "doc": "docs/framework/stages/1-truth.md",
-      "agents": ["site-researcher"],
-      "prompts": ["01-site-audit", "02-truth-harvest", "03-reference-teardown"],
+      "agents": [
+        "site-researcher"
+      ],
+      "prompts": [
+        "01-site-audit",
+        "02-truth-harvest",
+        "03-reference-teardown"
+      ],
       "checks": [
-        { "id": "goal", "type": "no_placeholders", "path": "docs/00-goal.md", "label": "Goal document filled (no [brackets] left)", "hint": "Fill it from the kickoff call; templates/goal-document.md" },
-        { "id": "audit", "type": "file_exists", "path": "docs/audit.md", "label": "Current-site audit done", "hint": "Prompt 01 with the site-researcher agent. No current site? `asf skip G1 audit --reason \"no site\"`" },
-        { "id": "arc", "type": "section_filled", "path": "docs/truth.md", "section": "business arc", "label": "Business arc written in the client's words", "hint": "Prompt 02 (truth harvest) with the site-researcher agent" },
-        { "id": "claims", "type": "table_rows", "path": "docs/truth.md", "section": "claims register", "min": 5, "label": "At least 5 claims, each with a source and status", "hint": "Prompt 02; every number, name and quote gets a row" },
-        { "id": "voice", "type": "table_rows", "path": "docs/truth.md", "section": "voice bank", "min": 10, "label": "At least 10 verbatim lines in the voice bank", "hint": "Quote the founders and their customers; never paraphrase" },
-        { "id": "media", "type": "media_mapped", "path": "docs/truth.md", "label": "Every image in content/media/ is in the truth file's image map", "hint": "Open each image and record what it really shows (truth.md §6)" },
-        { "id": "references", "type": "file_exists", "path": "docs/references.md", "label": "Competitor and reference teardown done", "hint": "Prompt 03 with the site-researcher agent" }
+        {
+          "id": "goal",
+          "type": "no_placeholders",
+          "path": "docs/00-goal.md",
+          "label": "Goal document filled (no [brackets] left)",
+          "hint": "Fill it from the kickoff call; templates/goal-document.md"
+        },
+        {
+          "id": "audit",
+          "type": "file_exists",
+          "path": "docs/audit.md",
+          "label": "Current-site audit done",
+          "hint": "Prompt 01 with the site-researcher agent. No current site? `asf skip G1 audit --reason \"no site\"`"
+        },
+        {
+          "id": "arc",
+          "type": "section_filled",
+          "path": "docs/truth.md",
+          "section": "business arc",
+          "label": "Business arc written in the client's words",
+          "hint": "Prompt 02 (truth harvest) with the site-researcher agent"
+        },
+        {
+          "id": "claims",
+          "type": "table_rows",
+          "path": "docs/truth.md",
+          "section": "claims register",
+          "min": 5,
+          "label": "At least 5 claims, each with a source and status",
+          "hint": "Prompt 02; every number, name and quote gets a row"
+        },
+        {
+          "id": "voice",
+          "type": "table_rows",
+          "path": "docs/truth.md",
+          "section": "voice bank",
+          "min": 10,
+          "label": "At least 10 verbatim lines in the voice bank",
+          "hint": "Quote the founders and their customers; never paraphrase"
+        },
+        {
+          "id": "media",
+          "type": "media_mapped",
+          "path": "docs/truth.md",
+          "label": "Every image in content/media/ is in the truth file's image map",
+          "hint": "Open each image and record what it really shows (truth.md §6)"
+        },
+        {
+          "id": "references",
+          "type": "file_exists",
+          "path": "docs/references.md",
+          "label": "Competitor and reference teardown done",
+          "hint": "Prompt 03 with the site-researcher agent"
+        }
       ],
       "manual": [
         "The client signed the goal document",
@@ -30,14 +83,52 @@
       "title": "Story",
       "question": "What do we say, to whom, in what order, on which page?",
       "doc": "docs/framework/stages/2-story.md",
-      "agents": ["site-strategist"],
-      "prompts": ["04-positioning-messaging", "05-ia-page-recipes"],
+      "agents": [
+        "site-strategist"
+      ],
+      "prompts": [
+        "04-positioning-messaging",
+        "05-ia-page-recipes"
+      ],
       "checks": [
-        { "id": "strategy", "type": "no_placeholders", "path": "docs/01-strategy.md", "label": "Strategy written (no [brackets] left)", "hint": "Prompt 04 with the site-strategist agent" },
-        { "id": "approval", "type": "section_filled", "path": "docs/01-strategy.md", "section": "client approval", "label": "The client's own words choosing the message are recorded", "hint": "Ask which route defines their business; quote the answer" },
-        { "id": "ia", "type": "no_placeholders", "path": "docs/02-information-architecture.md", "label": "Information architecture done", "hint": "Prompt 05 with the site-strategist agent" },
-        { "id": "briefs", "type": "glob_min", "glob": "docs/briefs/*.md", "min": 3, "label": "Page briefs written (at least 3)", "hint": "Prompt 05; one brief per page from templates/page-brief.md" },
-        { "id": "brief-length", "type": "briefs_max_sections", "glob": "docs/briefs/*.md", "max": 8, "label": "Every brief has 8 sections or fewer", "hint": "One idea, one home: link instead of repeating" }
+        {
+          "id": "strategy",
+          "type": "no_placeholders",
+          "path": "docs/01-strategy.md",
+          "label": "Strategy written (no [brackets] left)",
+          "hint": "Prompt 04 with the site-strategist agent"
+        },
+        {
+          "id": "approval",
+          "type": "section_filled",
+          "path": "docs/01-strategy.md",
+          "section": "client approval",
+          "label": "The client's own words choosing the message are recorded",
+          "hint": "Ask which route defines their business; quote the answer"
+        },
+        {
+          "id": "ia",
+          "type": "no_placeholders",
+          "path": "docs/02-information-architecture.md",
+          "label": "Information architecture done",
+          "hint": "Prompt 05 with the site-strategist agent"
+        },
+        {
+          "id": "briefs",
+          "type": "glob_min",
+          "glob": "docs/briefs/*.md",
+          "min": 3,
+          "label": "Page briefs written (at least 3)",
+          "hint": "Prompt 05; one brief per page from templates/page-brief.md"
+        },
+        {
+          "id": "brief-length",
+          "type": "briefs_max_sections",
+          "glob": "docs/briefs/*.md",
+          "max": 8,
+          "label": "Every brief has 8 sections or fewer",
+          "hint": "One idea, one home: link instead of repeating"
+        }
       ],
       "manual": [
         "The client chose a messaging route and said it defines their business",
@@ -51,14 +142,55 @@
       "title": "System",
       "question": "How does it look, and how does it work?",
       "doc": "docs/framework/stages/3-system.md",
-      "agents": ["site-copywriter"],
-      "prompts": ["07-design-direction", "06-page-copy"],
+      "agents": [
+        "site-copywriter"
+      ],
+      "prompts": [
+        "07-design-direction",
+        "06-page-copy"
+      ],
       "checks": [
-        { "id": "facts", "type": "not_contains", "glob": "wp-content/plugins/*/inc/entity.php", "text": "[CONFIRM: tagline", "label": "Client facts file filled (entity.php)", "hint": "Fill inc/entity.php from the truth file first" },
-        { "id": "design-brief", "type": "table_rows", "path": "docs/04-design-system.md", "section": "brief", "min": 4, "label": "Design brief written from the raw data", "hint": "Prompt 07: geography, buyer, category codes, price, their own world" },
-        { "id": "directions", "type": "table_rows", "path": "docs/04-design-system.md", "section": "directions", "min": 3, "label": "Three design directions compared", "hint": "Prompt 07; the client chooses" },
-        { "id": "design-layer", "type": "not_contains", "glob": "wp-content/themes/*/assets/css/brand.css", "text": "ASF:UNBRANDED", "label": "The client's own design layer is in place", "hint": "Write the chosen design into assets/css/brand.css + theme.json" },
-        { "id": "lint", "type": "command", "run": "python3 docs/framework/qa/lint_content.py content", "label": "Content lint: no errors", "hint": "Fix what lint_content.py reports" }
+        {
+          "id": "facts",
+          "type": "not_contains",
+          "glob": "wp-content/plugins/*/inc/entity.php",
+          "text": "[CONFIRM: tagline",
+          "label": "Client facts file filled (entity.php)",
+          "hint": "Fill inc/entity.php from the truth file first"
+        },
+        {
+          "id": "design-brief",
+          "type": "table_rows",
+          "path": "docs/04-design-system.md",
+          "section": "brief",
+          "min": 4,
+          "label": "Design brief written from the raw data",
+          "hint": "Prompt 07: geography, buyer, category codes, price, their own world"
+        },
+        {
+          "id": "directions",
+          "type": "table_rows",
+          "path": "docs/04-design-system.md",
+          "section": "directions",
+          "min": 3,
+          "label": "Three design directions compared",
+          "hint": "Prompt 07; the client chooses"
+        },
+        {
+          "id": "design-layer",
+          "type": "not_contains",
+          "glob": "wp-content/themes/*/assets/css/brand.css",
+          "text": "ASF:UNBRANDED",
+          "label": "The client's own design layer is in place",
+          "hint": "Write the chosen design into assets/css/brand.css + theme.json"
+        },
+        {
+          "id": "lint",
+          "type": "command",
+          "run": "python3 docs/framework/qa/lint_content.py content",
+          "label": "Content lint: no errors",
+          "hint": "Fix what lint_content.py reports"
+        }
       ],
       "manual": [
         "Designer review passes the anti-AI-look checklist",
@@ -72,12 +204,34 @@
       "title": "Ship",
       "question": "Is it right, fast, accessible, finished and deployed?",
       "doc": "docs/framework/stages/4-ship.md",
-      "agents": ["site-qa"],
-      "prompts": ["08-qa-review"],
+      "agents": [
+        "site-qa"
+      ],
+      "prompts": [
+        "08-qa-review"
+      ],
       "checks": [
-        { "id": "lint-strict", "type": "command", "run": "python3 docs/framework/qa/lint_content.py content --strict", "label": "Strict lint: no errors and no [CONFIRM] chips left", "hint": "Get every [CONFIRM] answered by the client, or remove the claim" },
-        { "id": "crawl", "type": "command", "run": "python3 docs/framework/qa/crawl.py {site_url}", "label": "Crawl: no errors", "hint": "Fix what crawl.py reports (status, H1, meta, schema, links)" },
-        { "id": "staging", "type": "state_set", "key": "deploy.staging_url", "label": "Deployed to staging", "hint": "Deploy (docs/07-deployment.md), then `asf set deploy.staging_url https://…`" }
+        {
+          "id": "lint-strict",
+          "type": "command",
+          "run": "python3 docs/framework/qa/lint_content.py content --strict",
+          "label": "Strict lint: no errors and no [CONFIRM] chips left",
+          "hint": "Get every [CONFIRM] answered by the client, or remove the claim"
+        },
+        {
+          "id": "crawl",
+          "type": "command",
+          "run": "python3 docs/framework/qa/crawl.py {site_url}",
+          "label": "Crawl: no errors",
+          "hint": "Fix what crawl.py reports (status, H1, meta, schema, links)"
+        },
+        {
+          "id": "staging",
+          "type": "state_set",
+          "key": "deploy.staging_url",
+          "label": "Deployed to staging",
+          "hint": "Deploy (docs/07-deployment.md), then `asf set deploy.staging_url https://…`"
+        }
       ],
       "manual": [
         "Responsive check passes at 375, 768, 1440 and 1920",
@@ -94,16 +248,51 @@
       "question": "Is the site doing its job, and what do we change next?",
       "doc": "docs/framework/stages/5-run.md",
       "agents": [],
-      "prompts": ["09-weekly-report"],
+      "prompts": [
+        "09-weekly-report"
+      ],
       "repeat": "weekly",
       "checks": [
-        { "id": "live", "type": "state_set", "key": "deploy.production_url", "label": "Live in production", "hint": "`asf set deploy.production_url https://…`" },
-        { "id": "analytics", "type": "state_set", "key": "measurement.analytics", "label": "Analytics connected", "hint": "`asf set measurement.analytics \"GA4 G-XXXX\"`" },
-        { "id": "report", "type": "recent_file", "glob": "docs/reports/*.md", "days": 7, "label": "A weekly report in the last 7 days", "hint": "Prompt 09; save it as docs/reports/YYYY-MM-DD.md" }
+        {
+          "id": "live",
+          "type": "state_set",
+          "key": "deploy.production_url",
+          "label": "Live in production",
+          "hint": "`bin/asf set deploy.production_url https://…`"
+        },
+        {
+          "id": "analytics",
+          "type": "state_set",
+          "key": "measurement.analytics",
+          "label": "Analytics connected",
+          "hint": "Set ASF_GA4_ID (or ASF_GTM_ID) on the site, then `bin/asf set measurement.analytics \"GA4 G-XXXX\"`"
+        },
+        {
+          "id": "prompts",
+          "type": "state_set",
+          "key": "measurement.prompts",
+          "label": "AI-search prompts to track are listed",
+          "hint": "`bin/asf set measurement.prompts '[\"best … for …\", \"…\"]'` (5 prompts buyers would ask)"
+        },
+        {
+          "id": "data",
+          "type": "recent_file",
+          "glob": "docs/reports/data/*.json",
+          "days": 7,
+          "label": "This week's numbers collected",
+          "hint": "`bin/asf report` (or /asf report)"
+        },
+        {
+          "id": "report",
+          "type": "latest_no_placeholders",
+          "glob": "docs/reports/*.md",
+          "label": "This week's report written (no [blanks] left)",
+          "hint": "/asf report: the agent writes \"The three things\" from the data; you review it"
+        }
       ],
       "manual": [
-        "This week's report was sent to the client",
-        "It names one concrete action for the coming week"
+        "This week's report was reviewed and sent to the client",
+        "It names one concrete action for the coming week, with an owner"
       ]
     }
   ]

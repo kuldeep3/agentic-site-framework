@@ -7,13 +7,20 @@
 
 ---
 
-## Weekly (≈ 30 minutes with AI)
-Prompt: [`prompts/09-weekly-report.md`](../prompts/09-weekly-report.md). Template: [`templates/weekly-report.md`](../templates/weekly-report.md).
+## Before the first report (once, at launch)
+- Analytics on the live site: `define( 'ASF_GA4_ID', 'G-…' )` (or `ASF_GTM_ID`) in wp-config, plus a consent banner that calls `window.asfConsent.grant()` where consent is required (UK/EU). Then `bin/asf set measurement.analytics "GA4 G-…"`.
+- An Application Password for the report (WordPress admin: Users → Profile → Application Passwords), stored as `ASF_WP_USER` / `ASF_WP_APP_PASSWORD` wherever the report runs.
+- Five prompts buyers would ask an AI assistant: `bin/asf set measurement.prompts '["…", "…"]'`.
+- The goal baseline from `docs/00-goal.md`: `bin/asf set measurement.baseline '{"leads_per_week": 3, "target": 6}'`.
+- Optional: the weekly schedule (`docs/framework/orchestrator/weekly-report.yml`, or a scheduled `/asf report` routine). See [`orchestrator/README.md`](../orchestrator/README.md) § Measurement.
 
-1. Pull the numbers: sessions, leads (brief-form submissions), booked calls, top pages, top queries, conversion rate by page. Pull AI-search presence too: is the client cited for their 5 tracked prompts in ChatGPT, Perplexity and Google AI Overviews?
-2. Compare against last week and against the goal document baseline.
-3. Write **three things**: what happened, why we think so, and what we'll do this week.
-4. Send it. Every week, even when nothing changed. A quiet week gets a short report.
+## Weekly (≈ 15 minutes with AI)
+Run **`/asf report`** in Claude Code. Prompt: [`prompts/09-weekly-report.md`](../prompts/09-weekly-report.md). Template: [`templates/weekly-report.md`](../templates/weekly-report.md).
+
+1. `bin/asf report` pulls the numbers: enquiries and sign-ups from the site itself (by need, page and source), site health and a crawl, plus GA4 and Search Console when connected. Everything is compared with the previous week.
+2. The agent adds what the script can't reach (connectors for analytics, Search Console, AI visibility) and checks the tracked prompts: is the client cited in ChatGPT, Perplexity and Google AI Overviews?
+3. It writes **three things**: what happened, why we think so, and what we'll do this week, using only sourced numbers.
+4. A person reviews and sends it. Every week, even when nothing changed. A quiet week gets a short report.
 
 ## Monthly
 - **One improvement proposal**, sized and priced: a new case study, a landing page for a query that's gaining, a page test, a new offer page. This is how the engagement grows.

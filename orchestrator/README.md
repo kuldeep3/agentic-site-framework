@@ -53,5 +53,22 @@ Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no curren
 ## Check types (for editing `workflow.json`)
 `file_exists` · `no_placeholders` (no unfilled `[template brackets]`; links, checkboxes and `[CONFIRM]` don't count) · `section_filled` (a heading's section has real text) · `table_rows` (min filled rows under a heading) · `media_mapped` (every file in `content/media/` named in the truth file) · `glob_min` · `briefs_max_sections` · `not_contains` · `command` (exit code 0; `{site_url}` is filled from `asf.json`) · `state_set` (a value set with `asf set`) · `recent_file` (newest match within N days).
 
+## Measurement (stage 5, weekly)
+`bin/asf report` collects last week's numbers into `docs/reports/data/<date>.json` and drafts `docs/reports/<date>.md`. `/asf report` then has the agent fill the gaps and write "The three things"; a person reviews and sends it. G5 checks that this week's data exists and the report has no blanks left.
+
+| Source | What it gives | How to connect |
+|---|---|---|
+| **The site's own leads** (first-party, always available) | Enquiries and sign-ups, this week vs last, by need, page, source (UTM or referrer) and budget | The base plugin's private `GET /wp-json/<slug>/v1/metrics`. Create an Application Password for an admin (Users → Profile → Application Passwords), then set `ASF_WP_USER` and `ASF_WP_APP_PASSWORD` |
+| **Site health** | Home page status and response time, plus a full crawl | Automatic, against `deploy.production_url` (or `site_url`) |
+| **GA4** | Sessions, users, engagement, and the site's events (`lead_submit`, `cta_click`, `book_call_open`, `phone_click`, `newsletter_signup`, `offer_view`) | On the site: `define( 'ASF_GA4_ID', 'G-…' )` (or `ASF_GTM_ID`) in wp-config. For the report: `GA4_PROPERTY_ID` + `GOOGLE_ACCESS_TOKEN`, or a connector in Claude Code |
+| **Search Console** | Clicks, impressions, average position, top queries | `GSC_SITE_URL` + `GOOGLE_ACCESS_TOKEN`, or a connector |
+| **AI search** | Whether assistants cite the client for 5 tracked prompts | `bin/asf set measurement.prompts '["…", "…"]'`; the agent checks them through an AI-visibility connector, or a web search as a proxy |
+
+Privacy: analytics never loads on local sites, and defaults to Consent Mode "denied" until the site's consent banner calls `window.asfConsent.grant()` (UK/EU sites need that banner). Credentials only ever come from environment variables, never from files in the repo. The GA4 and Search Console calls follow Google's documented API but haven't yet been run against a live property; errors land in the data file rather than being hidden.
+
+**Running it every week:**
+- **Unattended numbers:** copy `weekly-report.yml` to the project as `.github/workflows/asf-weekly-report.yml` and add the secrets. Every Monday it opens a pull request with the data and the draft.
+- **Unattended narrative too:** schedule a Claude Code routine on the project that runs `/asf report` weekly (`/schedule` in Claude Code).
+
 ## What plugs in next
-Deployment and measurement are already stages with checks (`deploy.staging_url`, `deploy.production_url`, `measurement.analytics`, a weekly report). Today you do those steps by hand and record them with `asf set`. Deploy adapters and a scheduled reporting agent will do them and set the same values, so the workflow doesn't change.
+Deployment is already a stage with checks (`deploy.staging_url`, `deploy.production_url`); today you deploy by hand and record it with `asf set`. A deploy adapter will do it and set the same values, so the workflow doesn't change.

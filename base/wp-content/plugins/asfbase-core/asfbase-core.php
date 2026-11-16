@@ -17,7 +17,7 @@ define( 'HM_CORE_VERSION', '1.0.0' );
 define( 'HM_CORE_DIR', __DIR__ );
 define( 'HM_CORE_FILE', __FILE__ );
 
-foreach ( array( 'entity', 'post-types', 'blocks', 'leads', 'seo', 'schema', 'llms', 'robots', 'redirects' ) as $hm_module ) {
+foreach ( array( 'entity', 'post-types', 'blocks', 'leads', 'seo', 'schema', 'llms', 'robots', 'redirects', 'analytics', 'metrics' ) as $hm_module ) {
 	require HM_CORE_DIR . "/inc/{$hm_module}.php";
 }
 

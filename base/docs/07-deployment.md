@@ -15,7 +15,7 @@ The live site runs WordPress with the **Enfold** theme, **Rank Math** and **Grav
 6. Redirects: import `hm_redirect_map()` (`asfbase-core/inc/redirects.php`) into Rank Math → Redirections, then add `define( 'HM_PHP_REDIRECTS', false );` to `wp-config.php`.
 7. Forms: the native brief form works as-is (leads go to WP → Leads and email). If ASF Base prefers Gravity Forms, swap the `hm/brief-form` block on Contact and Growth Audit. Keep the three-step structure and the budget/timeline questions.
 8. Email deliverability: install an SMTP plugin (for example WP Mail SMTP) so lead emails don't land in spam.
-9. Analytics: add GTM or GA4 (Site Kit or a header snippet). `site.js` already pushes `cta_click`, `book_call_open`, `phone_click`, `lead_submit`, `newsletter_signup` and `offer_view` to `dataLayer`. Keep the existing **Meta pixel** (ID on the live site) for ads.
+9. Analytics: set `define( 'ASF_GA4_ID', 'G-…' );` (or `ASF_GTM_ID`) in production's wp-config; the plugin loads the tag with Google Consent Mode. Consent defaults to required: UK/EU sites need a consent banner that calls `window.asfConsent.grant()` (set `ASF_ANALYTICS_CONSENT` to `not_required` only where the law allows). `site.js` already sends `cta_click`, `book_call_open`, `phone_click`, `lead_submit`, `newsletter_signup` and `offer_view`. For the weekly report, create an Application Password (Users → Profile → Application Passwords) and run `bin/asf set measurement.analytics "GA4 G-…"`.
 
 ## 2. QA before go-live
 - [ ] Everything in `06-content-checklist.md` signed off; no `[CONFIRM]` chips left (`grep -r hm-confirm`)
