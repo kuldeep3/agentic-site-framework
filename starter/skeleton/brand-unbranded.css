@@ -1,0 +1,12 @@
+/* ==========================================================================
+   ASF:UNBRANDED — the client's design layer goes here.
+
+   The site runs on the wireframe base (main.css: layout and function only).
+   Stage 3 designs this client from their raw data and writes the result here:
+   palette, type, shape, layout and section rhythm, motifs, imagery treatment,
+   motion. It may restyle any component, or replace main.css entirely.
+   Every client's design is different; never start from another client's.
+   See docs/framework/stages/3-system.md and prompts/07-design-direction.md.
+
+   `lint_content.py` warns, and gate G3 fails, while this marker is here.
+   ========================================================================== */

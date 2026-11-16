@@ -1,0 +1,20 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "hm/work-grid",
+	"title": "Work grid",
+	"category": "widgets",
+	"icon": "portfolio",
+	"description": "Case study cards. 'featured' = asymmetric editorial layout; 'grid' = two columns. On /work/ it follows the service filter in the URL.",
+	"attributes": {
+		"count": { "type": "number", "default": 4 },
+		"layout": { "type": "string", "enum": [ "featured", "grid" ], "default": "featured" },
+		"service": { "type": "string", "default": "" },
+		"showFilter": { "type": "boolean", "default": false },
+		"excludeCurrent": { "type": "boolean", "default": true }
+	},
+	"supports": { "html": false, "align": [ "wide", "full" ] },
+	"textdomain": "hm",
+	"editorScript": "hm-editor-blocks",
+	"render": "file:./render.php"
+}

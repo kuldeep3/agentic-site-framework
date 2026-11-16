@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "hm/case-next",
+	"title": "Next case study",
+	"category": "theme",
+	"icon": "arrow-right-alt",
+	"description": "Big link to the next case study in the Work order (wraps to the first).",
+	"usesContext": [ "postId" ],
+	"supports": { "html": false, "multiple": false },
+	"textdomain": "hm",
+	"editorScript": "hm-editor-blocks",
+	"render": "file:./render.php"
+}

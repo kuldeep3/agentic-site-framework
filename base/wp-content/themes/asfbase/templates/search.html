@@ -1,0 +1,47 @@
+<!-- wp:template-part {"slug":"header","tagName":"div","className":"hm-header-part"} /-->
+
+<!-- wp:group {"tagName":"main","anchor":"main","className":"hm-main","layout":{"type":"default"}} -->
+<main id="main" class="wp-block-group hm-main">
+<!-- wp:group {"tagName":"section","align":"full","className":"hm-section hm-page-hero","layout":{"type":"default"}} -->
+<section class="wp-block-group alignfull hm-section hm-page-hero"><!-- wp:paragraph {"className":"hm-label"} -->
+<p class="hm-label">Insights</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:query-title {"type":"search","level":1} /-->
+
+<!-- wp:paragraph {"className":"hm-lead hm-mt-l"} -->
+<p class="hm-lead hm-mt-l"><mark class="hm-confirm">[CONFIRM: one-line intro for this archive]</mark></p>
+<!-- /wp:paragraph --></section>
+<!-- /wp:group -->
+
+<!-- wp:group {"tagName":"section","align":"full","className":"hm-section is-flush-top no-rule","layout":{"type":"default"}} -->
+<section class="wp-block-group alignfull hm-section is-flush-top no-rule"><!-- wp:query {"queryId":1,"query":{"perPage":12,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","inherit":true},"className":"hm-posts"} -->
+<div class="wp-block-query hm-posts"><!-- wp:post-template -->
+<!-- wp:post-featured-image {"isLink":true,"sizeSlug":"asfbase-card"} /-->
+
+<!-- wp:post-date /-->
+
+<!-- wp:post-title {"isLink":true,"level":2} /-->
+
+<!-- wp:post-excerpt {"excerptLength":22} /-->
+<!-- /wp:post-template -->
+
+<!-- wp:query-pagination -->
+<!-- wp:query-pagination-previous /-->
+
+<!-- wp:query-pagination-numbers /-->
+
+<!-- wp:query-pagination-next /-->
+<!-- /wp:query-pagination -->
+
+<!-- wp:query-no-results -->
+<!-- wp:paragraph -->
+<p>Nothing here yet. Try the <a href="/insights/">latest insights</a>.</p>
+<!-- /wp:paragraph -->
+<!-- /wp:query-no-results --></div>
+<!-- /wp:query --></section>
+<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","tagName":"div","className":"hm-footer-part"} /-->

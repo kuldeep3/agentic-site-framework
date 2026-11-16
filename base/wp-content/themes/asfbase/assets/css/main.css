@@ -1,0 +1,247 @@
+/* ==========================================================================
+   ASF:WIREFRAME — base stylesheet (layout and function only, no design)
+
+   This makes every component readable and usable so content, SEO, forms and
+   QA can be built and tested. It deliberately makes no design decisions:
+   greys, system fonts, plain rectangles, no motifs, no animation.
+
+   Each client's design is created in stage 3 from their raw data (truth file,
+   products, photos, geography, buyers, competitors): see
+   docs/framework/stages/3-system.md. The design may restyle every component,
+   change layouts and section rhythm, or replace this file entirely. Keep the
+   functional rules marked FUNCTION (JS state, accessibility, the content edge).
+
+   Class names (.hm-*) are content hooks, not a look. Their purpose is listed
+   in docs/05-content-authoring.md.
+   ========================================================================== */
+
+/* 1. Tokens: neutral roles a client design can redefine. --------------------- */
+:root {
+	--ink: #222;
+	--ink-2: #333;
+	--mist: #f2f2f2;
+	--white: #fff;
+	--accent: #555;
+	--fill: #222;
+	--on-fill: #fff;
+	--text: var(--ink);
+	--muted: #5c5c5c;
+	--line: rgb(0 0 0 / 0.12);
+	--surface: #fff;
+	--surface-2: var(--mist);
+	--f-display: var(--wp--preset--font-family--display), system-ui, sans-serif;
+	--f-sans: var(--wp--preset--font-family--sans), system-ui, sans-serif;
+	--gutter: var(--wp--custom--gutter, clamp(1.25rem, 4vw, 2.5rem));
+	--max: 1200px;
+	--section-y: clamp(3rem, 7vw, 5rem);
+}
+.hm-dark, .hm-footer, .hm-orange, .hm-tile.is-dark, .hm-testimonial.is-featured, .hm-offer.is-featured {
+	--text: #fff;
+	--muted: #c7c7c7;
+	--line: rgb(255 255 255 / 0.2);
+	--accent: #ddd;
+	--fill: #fff;
+	--on-fill: #222;
+	--surface: rgb(255 255 255 / 0.06);
+	--surface-2: rgb(255 255 255 / 0.1);
+}
+
+/* 2. Base. --------------------------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; } /* FUNCTION: menus and form steps toggle [hidden]. */
+body { margin: 0; color: var(--text); background: var(--white); font-family: var(--f-sans); }
+img { max-width: 100%; height: auto; }
+a { color: inherit; }
+h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: balance; }
+:is(h1, h2, h3) em, .hm-accent { font-style: normal; color: var(--accent); }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.hm-skip { position: absolute; left: 1rem; top: -100px; z-index: 300; padding: 0.6rem 1rem; background: var(--ink); color: #fff; }
+.hm-skip:focus { top: 1rem; }
+.hm-muted { color: var(--muted); }
+.hm-lead { font-size: var(--wp--preset--font-size--medium); color: var(--muted); max-width: 60ch; }
+.hm-statement { font-size: clamp(1.4rem, 2.6vw, 2rem); line-height: 1.25; max-width: 30ch; }
+.hm-label { display: block; margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.hm-note { font-size: 0.9rem; color: var(--muted); }
+.hm-confirm { background: #fef3c7; color: #78350f; border: 1px dashed #d97706; padding: 0.05em 0.35em; font-size: 0.85em; -webkit-text-fill-color: #78350f; }
+.hm-prose { max-width: 70ch; font-size: 1.0625rem; line-height: 1.7; }
+.screen-reader-text { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* 3. Sections and the content edge (FUNCTION: one left edge at every width). ----- */
+.hm-main > .alignfull, :where(.wp-block-post-content, .hm-main) > .alignfull { margin-block: 0 !important; }
+.hm-section { position: relative; padding: var(--section-y) var(--gutter) !important; color: var(--text); background: var(--panel, transparent); }
+.hm-section > * { max-width: var(--max); margin-left: max(0px, (100% - var(--max)) / 2) !important; margin-right: auto !important; }
+.hm-section + .hm-section:not(.hm-dark):not(.hm-bone):not(.hm-orange) { border-top: 1px solid var(--line); }
+.hm-dark { --panel: var(--ink); }
+.hm-bone { --panel: var(--mist); }
+.hm-orange { --panel: var(--ink-2); }
+.is-tight { --section-y: clamp(2rem, 4vw, 3rem); }
+.is-flush-top { padding-top: 0 !important; }
+
+/* 4. Buttons. -------------------------------------------------------------------- */
+.wp-block-buttons { gap: 0.75rem; }
+.hm-btn, .wp-block-button__link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1.1rem !important; border: 1px solid var(--fill); border-radius: 0; background: var(--fill) !important; color: var(--on-fill) !important; font: 600 0.95rem/1.1 var(--f-sans); text-decoration: none !important; cursor: pointer; }
+.hm-btn::after, .wp-block-button__link::after { content: "→"; }
+.hm-btn .hm-icon, .hm-link-arrow .hm-icon { display: none; } /* the arrow comes from ::after */
+.is-style-outline .wp-block-button__link, .hm-btn--ghost { background: transparent !important; color: var(--text) !important; border-color: var(--line); }
+.is-style-link .wp-block-button__link, .hm-link-arrow { padding: 0 !important; border: 0; background: none !important; color: var(--text) !important; text-decoration: underline !important; }
+
+/* 5. Header and navigation (FUNCTION: desktop nav vs mobile menu at 1080px). ------- */
+.hm-header { position: sticky; top: 0; z-index: 100; background: var(--white); border-bottom: 1px solid rgb(0 0 0 / 0.12); }
+.hm-header__bar { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 0.75rem var(--gutter); display: flex; align-items: center; gap: 1.25rem; color: #222; }
+.hm-logo { display: inline-flex; align-items: center; gap: 0.5rem; margin-right: auto; color: inherit; text-decoration: none; font-weight: 700; }
+.hm-logo__mark { display: grid; place-items: center; width: 2rem; height: 2rem; background: #222; color: #fff; font-size: 0.8rem; }
+.hm-nav__list { display: flex; gap: 0.25rem; list-style: none; margin: 0; padding: 0; }
+.hm-nav__link { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.5rem 0.75rem; border: 0; background: none; color: inherit; font: inherit; text-decoration: none; cursor: pointer; }
+.hm-nav__link[aria-current="page"], .hm-nav__link[data-current] { text-decoration: underline; }
+.hm-nav__link .hm-icon { width: 0.8em; height: 0.8em; }
+.hm-header__actions { display: flex; align-items: center; gap: 0.5rem; }
+.hm-header .hm-header__cta { --fill: #222; --on-fill: #fff; }
+.hm-burger { display: none; align-items: center; gap: 0.4rem; padding: 0.5rem 0.75rem; border: 1px solid rgb(0 0 0 / 0.2); background: none; font: inherit; cursor: pointer; }
+.hm-mega { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 1rem var(--gutter) 1.5rem; background: #fff; color: #222; border-top: 1px solid rgb(0 0 0 / 0.12); }
+.hm-mega__inner { display: grid; grid-template-columns: 1fr 280px; gap: 1.5rem; }
+.hm-mega__intro { display: none; }
+.hm-mega__groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem 1.5rem; }
+.hm-mega__group { display: contents; }
+.hm-mega__group > .hm-label { display: none; }
+.hm-mega__group ul { display: contents; list-style: none; }
+.hm-mega__group a { display: grid; grid-template-columns: 2rem 1fr; gap: 0 0.75rem; padding: 0.5rem; color: inherit; text-decoration: none; }
+.hm-mega__group a:hover { background: #f2f2f2; }
+.hm-mega__ico { grid-row: span 2; width: 2rem; height: 2rem; display: grid; place-items: center; background: #f2f2f2; }
+.hm-mega__ico svg { width: 1.1rem; height: 1.1rem; }
+.hm-mega__name { font-weight: 600; }
+.hm-mega__desc { font-size: 0.875rem; color: #5c5c5c; }
+.hm-mega__feature { display: flex; flex-direction: column; justify-content: space-between; gap: 1rem; padding: 1rem; background: #222; color: #fff; text-decoration: none; }
+.hm-mega__feature-title { font-weight: 700; font-size: 1.15rem; }
+.hm-mega__footer { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 1rem; padding-top: 0.75rem; border-top: 1px solid rgb(0 0 0 / 0.12); font-size: 0.9rem; }
+.hm-mobile { padding: 1rem var(--gutter) 1.5rem; background: #fff; color: #222; border-top: 1px solid rgb(0 0 0 / 0.12); }
+.hm-mobile ul { list-style: none; margin: 0; padding: 0; }
+.hm-mobile a { display: block; padding: 0.4rem 0; color: inherit; text-decoration: none; }
+.hm-mobile__nav > ul:first-child a { font-size: 1.25rem; font-weight: 600; }
+.hm-mobile__services { margin-top: 0.75rem !important; padding-top: 0.75rem !important; border-top: 1px solid rgb(0 0 0 / 0.12); }
+.hm-mobile__foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; margin-top: 1rem; }
+@media (max-width: 1080px) { .hm-nav { display: none; } .hm-burger { display: inline-flex; } .hm-header__cta { display: none; } }
+@media (min-width: 1081px) { .hm-mobile { display: none !important; } }
+
+/* 6. Heroes. ---------------------------------------------------------------------- */
+.hm-hero__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+.hm-hero__copy > * + * { margin-top: 1.25rem; }
+.hm-hero h1 { font-size: var(--wp--preset--font-size--hero); line-height: 1.05; margin: 0; }
+.hm-hero__copy > p:not(.hm-label) { font-size: var(--wp--preset--font-size--medium); color: var(--muted); max-width: 45ch; }
+.hm-hv__photo img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.hm-hv__card { margin-top: 0.75rem; display: grid; gap: 0.25rem; }
+.hm-trust { display: flex; align-items: center; gap: 0.75rem; font-size: 0.9rem; color: var(--muted); }
+.hm-trust__faces { display: flex; }
+.hm-trust__faces img { width: 2.25rem; height: 2.25rem; object-fit: cover; border-radius: 50%; margin-right: -0.4rem; }
+.hm-page-hero h1 { max-width: 24ch; }
+.hm-hero__foot { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem; margin-top: 2rem !important; align-items: start; }
+@media (max-width: 900px) { .hm-hero__grid, .hm-hero__foot { grid-template-columns: 1fr; } }
+
+/* 7. Layout helpers. ------------------------------------------------------------------ */
+.hm-head { display: grid; gap: 0.75rem; margin-bottom: 2rem !important; max-width: 70ch; }
+.hm-head h2 { margin: 0; }
+.hm-split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(1.5rem, 4vw, 3rem); }
+.hm-grid, .hm-features, .hm-offers, .hm-testimonials, .hm-stats, .hm-steps, .hm-bento, .hm-pains, .hm-compare, .hm-fit, .hm-faces, .hm-gallery {
+	display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+}
+.hm-grid.cols-2, .hm-compare, .hm-fit { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
+.hm-card, .hm-feature, .hm-offer, .hm-testimonial, .hm-stat, .hm-step, .hm-tile, .hm-pain, .hm-compare > *, .hm-fit > *, .hm-person { padding: 1.25rem !important; border: 1px solid var(--line); background: var(--surface); }
+.hm-card > *, .hm-feature > *, .hm-offer > *, .hm-testimonial > *, .hm-step > *, .hm-tile > * { margin: 0 0 0.6rem; }
+.hm-tile.is-dark { background: var(--ink); }
+.hm-tile.is-orange { background: var(--ink-2); color: #fff; }
+.hm-index__row { display: grid; grid-template-columns: 3rem 1fr; gap: 0.5rem 1rem; padding: 1rem 0; border-top: 1px solid var(--line); }
+.hm-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; }
+.hm-tags li { padding: 0.15rem 0.5rem; border: 1px solid var(--line); font-size: 0.8rem; }
+.hm-answer { font-size: 1.1rem; line-height: 1.6; max-width: 65ch; }
+.hm-facts { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
+.hm-facts li { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; padding: 0.6rem 0; border-bottom: 1px solid var(--line); }
+.hm-facts strong { font-weight: 600; }
+.hm-stat__num { font-size: 2.25rem; font-weight: 700; margin: 0; }
+.hm-stat__num em { font-style: normal; font-size: 0.6em; }
+.hm-stat__label, .hm-stat__src { color: var(--muted); }
+.hm-step__num, .hm-feature::before { font-weight: 700; color: var(--muted); }
+.hm-features { counter-reset: hm-feature; }
+.hm-feature { counter-increment: hm-feature; }
+.hm-feature::before { content: counter(hm-feature, decimal-leading-zero); display: block; margin-bottom: 0.5rem; }
+.is-style-checks, .hm-checks { list-style: none; padding-left: 0; }
+.is-style-checks li::before, .hm-checks li::before { content: "✓ "; font-weight: 700; }
+.hm-fit .is-good li::marker { content: "✓  "; }
+.hm-fit .is-not li::marker { content: "✕  "; }
+.hm-quote, .hm-testimonial__quote { font-size: 1.15rem; line-height: 1.5; }
+.hm-testimonial__who strong { display: block; }
+.hm-testimonial__who { font-size: 0.9rem; color: var(--muted); }
+.hm-offer__price { font-size: 1.25rem; font-weight: 700; }
+.hm-faq details { border-top: 1px solid var(--line); padding: 0.9rem 0; }
+.hm-faq summary { cursor: pointer; font-weight: 600; }
+.hm-gallery img, .hm-face img, .hm-person img { display: block; width: 100%; object-fit: cover; }
+.hm-face p strong { display: block; }
+.hm-creatives { display: flex; gap: 1rem; overflow-x: auto; }
+.hm-creatives > * { flex: 0 0 min(240px, 70%); }
+.hm-marquee ul { display: flex; flex-wrap: wrap; gap: 0.5rem 2rem; list-style: none; padding: 0; margin: 0; }
+.hm-marquee ul[aria-hidden="true"] { display: none; } /* FUNCTION: the script clones the list for scrolling; the wireframe shows it once. */
+.hm-table { width: 100%; border-collapse: collapse; }
+.hm-table td, .hm-table th { padding: 0.6rem; border-bottom: 1px solid var(--line); text-align: left; }
+@media (max-width: 800px) { .hm-split { grid-template-columns: 1fr; } }
+
+/* 8. Work (case studies / builds). ------------------------------------------------------ */
+.hm-work { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); gap: 1.5rem; }
+.hm-work__link { display: block; color: inherit; text-decoration: none; }
+.hm-work__media { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: #ddd; }
+.hm-work__media img { width: 100%; height: 100%; object-fit: cover; }
+.hm-work__placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem; background: #444; color: #fff; }
+.hm-work__placeholder strong { font-size: 2.5rem; }
+.hm-work__stat { position: absolute; left: 0.75rem; bottom: 0.75rem; padding: 0.3rem 0.6rem; background: rgb(0 0 0 / 0.7); color: #fff; font-size: 0.8rem; }
+.hm-work__meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: 0.75rem; font-size: 0.85rem; color: var(--muted); }
+.hm-work__title { margin: 0.25rem 0 0; font-size: 1.15rem; }
+
+/* 9. Forms (FUNCTION: steps show one at a time when the script runs). ---------------------- */
+.hm-form { display: grid; gap: 1.25rem; }
+.hm-form fieldset { border: 0; padding: 0; margin: 0; }
+.hm-form legend, .hm-form__q { font-weight: 700; font-size: 1.15rem; margin-bottom: 0.75rem; }
+.hm-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.hm-chip { display: inline-flex; }
+.hm-chip input { position: absolute; opacity: 0; }
+.hm-chip span { padding: 0.45rem 0.75rem; border: 1px solid rgb(0 0 0 / 0.25); cursor: pointer; }
+.hm-chip input:checked + span { background: #222; color: #fff; border-color: #222; }
+.hm-chip input:focus-visible + span { outline: 2px solid #222; outline-offset: 2px; }
+.hm-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 1rem; }
+.hm-field { display: grid; gap: 0.35rem; }
+.hm-field.is-full { grid-column: 1 / -1; }
+.hm-field :is(input, textarea, select) { padding: 0.65rem; border: 1px solid rgb(0 0 0 / 0.3); font: inherit; background: #fff; color: #222; }
+.hm-field textarea { min-height: 7rem; }
+.hm-field.is-error :is(input, textarea) { border-color: #b91c1c; }
+.hm-form__step { display: none; }
+.hm-form__step.is-active, .hm-form:not([data-steps]) .hm-form__step { display: block; }
+.hm-form__nav { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+.hm-form__progress { display: flex; align-items: center; gap: 0.3rem; }
+.hm-form__progress i { width: 1.5rem; height: 4px; background: #ccc; }
+.hm-form__progress i.is-done { background: #222; }
+.hm-form__back { border: 0; background: none; text-decoration: underline; cursor: pointer; font: inherit; }
+.hm-form__fine, .hm-form__msg { font-size: 0.875rem; color: var(--muted); }
+.hm-hp { position: absolute !important; left: -9999px; } /* FUNCTION: honeypot field stays invisible. */
+.hm-contact-alt { display: grid; gap: 0.5rem; }
+.hm-contact-alt a { font-size: 1.15rem; font-weight: 600; }
+
+/* 10. Footer. --------------------------------------------------------------------------------- */
+.hm-footer { background: var(--ink); color: #fff; }
+.hm-footer a { color: inherit; }
+.hm-footer__cta, .hm-footer__main, .hm-footer__legal { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 2.5rem var(--gutter); }
+.hm-footer__cta { border-bottom: 1px solid var(--line); }
+.hm-footer__cta-title { font-size: clamp(1.75rem, 4vw, 2.75rem); margin: 0.5rem 0 1rem; color: #fff; }
+.hm-footer__cta-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 1.5rem; }
+.hm-footer__cta-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.hm-footer__main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 2rem; }
+.hm-footer__contact { display: grid; gap: 0.35rem; align-content: start; }
+.hm-footer__big-link { font-size: 1.25rem; font-weight: 600; text-decoration: none; }
+.hm-footer__cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1.5rem; }
+.hm-footer__col ul { list-style: none; margin: 0.5rem 0 0; padding: 0; display: grid; gap: 0.4rem; font-size: 0.9rem; }
+.hm-footer__legal { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; font-size: 0.8rem; color: var(--muted); border-top: 1px solid var(--line); }
+.hm-footer__legal ul { display: flex; flex-wrap: wrap; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+.hm-footer__wordmark { display: none; } /* A design device: a client design may switch it on. */
+.hm-newsletter__row { display: flex; gap: 0.5rem; margin-top: 0.4rem; }
+.hm-newsletter input[type="email"] { flex: 1; min-width: 0; padding: 0.6rem; border: 1px solid var(--line); background: transparent; color: inherit; font: inherit; }
+.hm-newsletter button { padding: 0 0.9rem; border: 0; background: #fff; color: #222; cursor: pointer; }
+@media (max-width: 900px) { .hm-footer__main { grid-template-columns: 1fr; } }
+
+/* 11. Posts and case pages. ------------------------------------------------------------------- */
+.hm-posts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 1.5rem; }
+.hm-article, .hm-case { max-width: 70ch; }

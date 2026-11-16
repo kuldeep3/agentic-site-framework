@@ -1,0 +1,11 @@
+{
+  "forbidden": ["offshore", "outsourc", "white-label", "white label", "lorem ipsum", "YOUR-DELIVERY-PARTNER-NAME"],
+  "buzzwords": ["revolutionize", "revolutionise", "synergy", "leverage", "cutting-edge", "world-class", "seamless", "seamlessly", "unlock", "empower", "elevate", "supercharge", "game-changer", "game changing", "best-in-class", "next-level", "fast-paced", "delve", "tapestry", "holistic", "robust"],
+  "contrast_phrase": "Most agencies",
+  "max_sections": 8,
+  "seo_title_max": 60,
+  "description_max": 155,
+  "dupe_min_chars": 40,
+  "ignore_files": ["legal-*"],
+  "crawl_max_pages": 150
+}

@@ -1,0 +1,16 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "asfbase/site-footer",
+	"title": "ASF Base Site footer",
+	"category": "theme",
+	"icon": "align-wide",
+	"description": "Closing call-to-action, footer navigation, newsletter and legal links. Links are set in inc/navigation.php.",
+	"attributes": {
+		"showCta": { "type": "boolean", "default": true }
+	},
+	"supports": { "html": false, "multiple": false, "reusable": false },
+	"textdomain": "asfbase",
+	"editorScript": "asfbase-editor-blocks",
+	"render": "file:./render.php"
+}

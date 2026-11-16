@@ -1,0 +1,9 @@
+# Private: names that must never reach a client site (see starter/README.md)
+starter/private-leak-patterns.txt
+# Generated
+base/wordpress/
+**/wordpress/
+__pycache__/
+*.pyc
+*.log
+.DS_Store

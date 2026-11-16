@@ -1,0 +1,14 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "hm/case-header",
+	"title": "Case study header",
+	"category": "theme",
+	"icon": "id",
+	"description": "Title, summary and facts (client, services, industry, year) for the current case study.",
+	"usesContext": [ "postId", "postType" ],
+	"supports": { "html": false, "multiple": false },
+	"textdomain": "hm",
+	"editorScript": "hm-editor-blocks",
+	"render": "file:./render.php"
+}
