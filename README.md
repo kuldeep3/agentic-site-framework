@@ -64,11 +64,13 @@ For a client that makes products and sells through retailers or dealers, add `--
 
 Details and what was tested: [`starter/README.md`](starter/README.md).
 
-Then, in Claude Code, from the new project folder:
+Then open the new project folder in Claude Code and run **`/asf`**. The [orchestrator](orchestrator/) knows which stage the project is in, checks each gate automatically where it can, tells you what's next, and records every sign-off in `asf.json`:
 
-> "Run the Agentic Site Framework, stage 1 (Truth), for Acme. Their current site is https://acme.example and our internal notes are in ~/… Follow `docs/framework/stages/1-truth.md` and stop at gate G1."
+- `/asf run`: does the current stage's work up to its gate, briefing the stage's agents with its prompts and asking you for anything only the client can provide
+- `/asf approve G1`: records a gate sign-off after the lead confirms the manual items
+- `bin/asf status` / `bin/asf next`: the same from a terminal
 
-Repeat for each stage. Each stage doc lists the exact prompts ([`prompts/`](prompts/)), the templates to fill in ([`templates/`](templates/)) and the gate checklist.
+Each stage doc lists the exact prompts ([`prompts/`](prompts/)), the templates to fill in ([`templates/`](templates/)) and the gate checklist.
 
 **The site starts with no design.** The base is a wireframe (greys, system fonts, plain layout) so every client's look is created in stage 3 from their own raw data: logo, products, photos, geography, buyers and the competitor teardown. Nothing is copied from another client. See [`stages/3-system.md`](stages/3-system.md) and [`patterns/design-system.md`](patterns/design-system.md).
 
@@ -82,6 +84,7 @@ patterns/            messaging formulas, page recipes, design system rules, AI-s
 templates/           goal document, truth file, strategy, IA, page brief, content checklist, weekly report, decisions log
 prompts/             copy-paste prompts for each step (with inputs and expected outputs)
 agents/              Claude Code subagent definitions → copy into the project's .claude/agents/
+orchestrator/        runs a project end to end: workflow.json (stages, gates, checks), bin/asf, the /asf command
 qa/                  automated checks: content lint (block markup, SEO limits, duplicates, words), site crawl, responsive/grid sweep
 starter/             new-site.sh: spin up a client site from the base (agency or product-brand skeleton)
 base/                the design-neutral wireframe build every new site starts from

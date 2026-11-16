@@ -7,6 +7,8 @@ to read and change. The base (`base/`) is a design-neutral wireframe whose ident
 docs, framework and agents.
 """
 import argparse
+import datetime
+import json
 import re
 import shutil
 import struct
@@ -146,6 +148,20 @@ def reset_client_files(t, a, fw, ref):
     agents.mkdir(parents=True, exist_ok=True)
     for f in (fw / "agents").glob("*.md"):
         shutil.copy(f, agents / f.name)
+
+    # Orchestrator: project state (asf.json), the bin/asf command and the /asf Claude Code command.
+    (t / "bin").mkdir(exist_ok=True)
+    (t / "bin/asf").write_text('#!/usr/bin/env bash\n# The Agentic Site Framework orchestrator for this project (see docs/framework/orchestrator/README.md).\nexec python3 "$(cd "$(dirname "$0")/.." && pwd)/docs/framework/orchestrator/asf.py" "$@"\n')
+    (t / "bin/asf").chmod(0o755)
+    commands = t / ".claude/commands"
+    commands.mkdir(parents=True, exist_ok=True)
+    shutil.copy(fw / "orchestrator/claude-command.md", commands / "asf.md")
+    state = {
+        "framework": "Agentic Site Framework", "client": a.name, "kind": a.kind, "site_url": f"http://{a.slug}.test",
+        "created": datetime.datetime.now().astimezone().isoformat(timespec="minutes"), "stage": "truth",
+        "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
+    }
+    (t / "asf.json").write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
 
     # Project README and CLAUDE.md.
     theme_slug = a.slug.replace("-", "")
