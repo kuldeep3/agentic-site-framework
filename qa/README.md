@@ -6,8 +6,8 @@ Five checks, no dependencies (Python 3.9+ standard library, and a browser for th
 |---|---|---|
 | `launch.py` | the running site (local, staging or production) | **Security** (HTTPS, certificate, security headers, exposed files, login-name and version leaks, XML-RPC, PHP errors on pages), **performance** (response time, compression, page weight, images, render-blocking scripts, caching, fonts), **accessibility** (language, alt text, names, labels, headings, landmarks, skip link, zoom), **launch settings** (indexing right for the environment, robots, sitemap, 404s, privacy link, local URLs left behind, forms and email), and optionally **Lighthouse** via PageSpeed Insights |
 | `contrast.js` | each page, in a browser | Text below WCAG AA contrast against what's really behind it; links, buttons and fields with no visible focus style |
-| `lint_content.py` | the `content/` files | Broken block markup (what the editor flags as "unexpected content"), front-matter and SEO length limits, > 8 sections, several H1s, missing media, white-label terms, buzzwords, `[CONFIRM]` chips, the contrast used twice, text and quotes repeated across pages |
-| `crawl.py` | the running site | Non-200 pages, H1 count, titles, meta descriptions, canonicals, JSON-LD that doesn't parse, broken internal links and images, white-label terms in the HTML/meta/schema/llms.txt, missing robots.txt or llms.txt |
+| `lint_content.py` | the `content/` files, and the theme's templates | Broken block markup (what the editor flags as "unexpected content"), front-matter and SEO length limits, > 8 sections, several H1s, missing media, white-label terms, buzzwords, `[CONFIRM]` chips in the page, its front matter (title, SEO title, description) and the theme's templates and parts, leftover skeleton names ("Example service"), the contrast used twice, text and quotes repeated across pages |
+| `crawl.py` | the running site | Non-200 pages, H1 count, titles, meta descriptions, canonicals, JSON-LD that doesn't parse, broken internal links and images, white-label terms in the HTML/meta/schema/llms.txt, `[CONFIRM]` chips on the page or in its title and meta description, missing robots.txt or llms.txt |
 | `responsive.js` | each page, in a browser | Horizontal overflow, elements sticking out of the viewport, section content off the shared grid edge |
 
 ```bash
@@ -22,7 +22,7 @@ python3 docs/framework/qa/crawl.py http://acme.test
 python3 docs/framework/qa/launch.py https://staging.acme.com --env staging
 ```
 
-All three exit with code 1 when there are errors, so they can gate CI. Add `--strict` in launch week to turn `[CONFIRM]` chips into errors. `lint_content.py content --list-confirm` prints every chip for the content checklist.
+All three exit with code 1 when there are errors, so they can gate CI. With `--strict` (launch week, and gate G4), `[CONFIRM]` chips are errors wherever they appear (pages, front matter, theme templates, live titles and meta descriptions), and so are skeleton names left in the content. `lint_content.py content --list-confirm` prints every chip, templates included, for the content checklist.
 
 **responsive.js:** in Claude Code, open the page in the browser tool, set the width (375, 768, 1440, 1920), and run the file's contents with the JavaScript tool. Resizing doesn't reload the page, so you can define the check once as a function and call it at each width. `pass: true` at all four widths is the gate.
 
@@ -38,6 +38,7 @@ All three exit with code 1 when there are errors, so they can gate CI. Add `--st
 ## Config (`config.json`)
 - `forbidden`: names that must never appear (white-label). **Add the client's own sensitive names**: the delivery partner, offshore team, tools, and any client that can't be named.
 - `buzzwords`: words the voice rules ban. They show as warnings.
+- `skeleton_names`: the starter's example names ("Example service", "example-case-study"…). Any left in content is a warning, and an error with `--strict`.
 - `contrast_phrase`, `max_sections`, `seo_title_max`, `description_max`, `dupe_min_chars`, `ignore_files` (legal pages are carried over verbatim, so they're skipped by the duplicate check), `crawl_max_pages`.
 - `launch`: the budgets `launch.py` holds the site to. Pairs are [warning, error]: `page_weight_kb`, `requests`, `image_kb`, `ttfb_ms`, `cert_days` (days left). Also `pages` (sampled for performance), `html_kb`, `cache_min_days`, `max_fonts`, `lighthouse_min`, `lighthouse_paths` (extra paths for Lighthouse) and `privacy_words` (how the privacy policy link is recognised, in the site's languages).
 
