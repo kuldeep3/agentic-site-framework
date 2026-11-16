@@ -7,5 +7,19 @@
   "description_max": 155,
   "dupe_min_chars": 40,
   "ignore_files": ["legal-*"],
-  "crawl_max_pages": 150
+  "crawl_max_pages": 150,
+  "launch": {
+    "pages": 5,
+    "page_weight_kb": [1500, 3000],
+    "requests": [60, 100],
+    "html_kb": 250,
+    "image_kb": [250, 600],
+    "ttfb_ms": [800, 1800],
+    "cache_min_days": 7,
+    "cert_days": [21, 7],
+    "max_fonts": 4,
+    "lighthouse_min": 90,
+    "lighthouse_paths": [],
+    "privacy_words": ["privacy", "datenschutz", "confidentialit", "privacidad", "privacy-policy"]
+  }
 }

@@ -25,8 +25,8 @@ In ASF the website is the artifact and the weekly measurement is the service: St
 | **1 Truth** | Goal document, site audit, truth file (every claim, its source and whether it's public), verified image inventory, voice bank (the client's own words) | **G1:** goals signed off; every claim sourced; every image mapped to the client it really shows | [`stages/1-truth.md`](stages/1-truth.md) |
 | **2 Story** | Positioning, messaging (stakes hero, who-we-are line, contrast, echo, price anchor), IA, page recipes | **G2:** the client approves the message and agrees it defines *their* business; ≤ 8 sections per page; one idea per page | [`stages/2-story.md`](stages/2-story.md) |
 | **3 System** | Design tokens, components, page copy, the working build (theme + plugin + seed), AI-search layer, lead capture, analytics events | **G3:** design review passes the anti-"AI look" list; copy passes lint; the build seeds with one command | [`stages/3-system.md`](stages/3-system.md) |
-| **4 Ship** | Automated QA report, editor validation, form end-to-end test, launch checklist, handoff docs | **G4:** all checks green; zero `[CONFIRM]` chips; client sign-off | [`stages/4-ship.md`](stages/4-ship.md) |
-| **5 Run** | Weekly report, monthly improvement proposal | **G5 (every week):** report sent, whether the client asked or not | [`stages/5-run.md`](stages/5-run.md) |
+| **4 Ship** | Automated QA report, launch readiness scan (security, performance, accessibility, launch settings, Lighthouse), editor validation, form end-to-end test, launch checklist, handoff docs | **G4:** all checks green; zero `[CONFIRM]` chips; backups, monitoring and 2FA confirmed; client sign-off | [`stages/4-ship.md`](stages/4-ship.md) |
+| **5 Run** | Weekly report (with a rescan of the live site), monthly improvement proposal | **G5 (every week):** production scan clean; report sent, whether the client asked or not | [`stages/5-run.md`](stages/5-run.md) |
 
 ## Roles
 
@@ -85,7 +85,8 @@ templates/           goal document, truth file, strategy, IA, page brief, conten
 prompts/             copy-paste prompts for each step (with inputs and expected outputs)
 agents/              Claude Code subagent definitions → copy into the project's .claude/agents/
 orchestrator/        runs a project end to end: workflow.json (stages, gates, checks), bin/asf, the /asf command
-qa/                  automated checks: content lint (block markup, SEO limits, duplicates, words), site crawl, responsive/grid sweep
+qa/                  automated checks: content lint, site crawl, launch readiness (security, performance, accessibility,
+                     launch settings, Lighthouse), responsive/grid sweep, colour contrast and focus
 starter/             new-site.sh: spin up a client site from the base (agency or product-brand skeleton)
 base/                the design-neutral wireframe build every new site starts from
 examples/            two real projects, anonymised: what happened, what clients pushed back on, what changed

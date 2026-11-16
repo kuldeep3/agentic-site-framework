@@ -32,4 +32,7 @@ python3 docs/framework/qa/lint_content.py content
 ```bash
 python3 docs/framework/qa/crawl.py http://__SLUG__.test
 ```
-Responsive check: run `docs/framework/qa/responsive.js` in the browser at 375, 768, 1440 and 1920.
+```bash
+python3 docs/framework/qa/launch.py http://__SLUG__.test --only accessibility
+```
+Responsive check: run `docs/framework/qa/responsive.js` in the browser at 375, 768, 1440 and 1920. Contrast and focus: `docs/framework/qa/contrast.js`. On staging, run `launch.py` with `--env staging` for security, performance and launch settings too.

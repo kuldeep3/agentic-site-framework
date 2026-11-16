@@ -9,9 +9,18 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$asfbase_photo = ! empty( $attributes['image'] )
-	? '<img src="' . esc_url( $attributes['image'] ) . '" alt="" fetchpriority="high">'
-	: asfbase_case_image( $attributes['photoCase'] ?? '', 'large' );
+$asfbase_photo = asfbase_case_image( $attributes['photoCase'] ?? '', 'large' );
+if ( ! empty( $attributes['image'] ) ) {
+	// Width and height stop the layout jumping while the image loads (CLS).
+	$asfbase_dims = '';
+	$asfbase_up   = wp_get_upload_dir();
+	$asfbase_rel  = str_replace( set_url_scheme( $asfbase_up['baseurl'], 'relative' ), '', (string) wp_parse_url( $attributes['image'], PHP_URL_PATH ) );
+	$asfbase_size = str_starts_with( $asfbase_rel, '/' ) ? wp_getimagesize( $asfbase_up['basedir'] . $asfbase_rel ) : false;
+	if ( $asfbase_size ) {
+		$asfbase_dims = sprintf( ' width="%d" height="%d"', $asfbase_size[0], $asfbase_size[1] );
+	}
+	$asfbase_photo = '<img src="' . esc_url( $attributes['image'] ) . '" alt=""' . $asfbase_dims . ' fetchpriority="high">';
+}
 $asfbase_case  = get_page_by_path( (string) ( $attributes['photoCase'] ?? '' ), OBJECT, 'case_study' );
 $asfbase_stat  = $asfbase_case ? (string) get_post_meta( $asfbase_case->ID, 'hm_stat', true ) : '';
 $asfbase_who   = $asfbase_case ? (string) get_post_meta( $asfbase_case->ID, 'hm_client', true ) : '';

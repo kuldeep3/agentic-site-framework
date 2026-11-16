@@ -14,6 +14,11 @@ Automated:
    the result.
 4. Editor validation: open each page in the block editor and run the snippet in
    docs/framework/stages/4-ship.md §4.2.
+5. Launch readiness: python3 docs/framework/qa/launch.py [URL] (add --env staging on staging).
+   Security, performance, accessibility and launch settings; set ASF_WP_USER and
+   ASF_WP_APP_PASSWORD to include the site's own health (updates, admin accounts, failed emails).
+6. Contrast and focus: on each key template, in each colour context, run
+   docs/framework/qa/contrast.js in the browser. Then Tab through the header, the menu and the form.
 
 Human read (as [ICP buyer], in this order: home → [service] → [case study] → start → contact):
 - Repetition: the same idea, proof, quote or heading on two pages
@@ -24,7 +29,8 @@ Human read (as [ICP buyer], in this order: home → [service] → [case study] �
 - Visual: the anti-"AI look" checklist and the calm-hero rule
 
 Report: one table of failures (page, check, what's wrong, suggested fix), ranked by impact on
-the goal. Don't fix anything yourself unless told to. List what you couldn't check.
+the goal. Security errors (exposed files, leaked login names, a public debug log) rank first after
+any white-label hit. Don't fix anything yourself unless told to. List what you couldn't check.
 ```
 
 ## Expected output

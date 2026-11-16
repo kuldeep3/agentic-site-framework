@@ -202,7 +202,7 @@
       "id": "ship",
       "gate": "G4",
       "title": "Ship",
-      "question": "Is it right, fast, accessible, finished and deployed?",
+      "question": "Is it right, secure, fast, accessible, finished and deployed?",
       "doc": "docs/framework/stages/4-ship.md",
       "agents": [
         "site-qa"
@@ -231,13 +231,51 @@
           "key": "deploy.staging_url",
           "label": "Deployed to staging",
           "hint": "Deploy (docs/07-deployment.md), then `asf set deploy.staging_url https://…`"
+        },
+        {
+          "id": "accessibility",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {site_url} --only accessibility",
+          "label": "Accessibility scan: no errors (alt text, names, labels, language, zoom)",
+          "hint": "Fix what launch.py reports; then run qa/contrast.js in the browser for colour contrast"
+        },
+        {
+          "id": "security",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {deploy.staging_url} --env staging --only security",
+          "label": "Security scan on staging: no errors (HTTPS, headers, exposed files, login-name leaks)",
+          "hint": "Fix what launch.py reports; set ASF_WP_USER and ASF_WP_APP_PASSWORD to include pending updates and risky settings"
+        },
+        {
+          "id": "performance",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {deploy.staging_url} --env staging --only performance",
+          "label": "Performance budget on staging: no errors (response time, compression, page weight, images)",
+          "hint": "Resize and compress images first; then caching and compression at the host"
+        },
+        {
+          "id": "launch-settings",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {deploy.staging_url} --env staging --only launch",
+          "label": "Launch settings on staging: robots, sitemap, real 404s, privacy link, no local URLs, forms and email",
+          "hint": "Fix what launch.py reports"
+        },
+        {
+          "id": "lighthouse",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {deploy.staging_url} --env staging --only lighthouse",
+          "label": "Lighthouse (mobile) 90+ on home and two inner pages",
+          "hint": "Needs a public staging URL (it's sent to Google PageSpeed Insights). Behind a password? Run Lighthouse in Chrome DevTools, then `bin/asf skip G4 lighthouse --reason \"scores …\"`"
         }
       ],
       "manual": [
         "Responsive check passes at 375, 768, 1440 and 1920",
+        "Colour contrast passes (qa/contrast.js) in every colour context, and a keyboard-only pass reaches the menu, every link and the form",
         "Block editor shows zero invalid blocks",
-        "The enquiry form works end to end on staging",
-        "Lighthouse is 90 or more on home, one inner page and one case page",
+        "The enquiry form works end to end on staging, and the email arrives (not in spam)",
+        "Backups run daily at the host, are kept at least 30 days, and one restore has been tested",
+        "Uptime monitoring on the production URL alerts a named person",
+        "Every admin has a personal login, a strong password and two-factor authentication",
         "The client signed off staging in writing"
       ]
     },
@@ -259,6 +297,13 @@
           "key": "deploy.production_url",
           "label": "Live in production",
           "hint": "`bin/asf set deploy.production_url https://…`"
+        },
+        {
+          "id": "production-scan",
+          "type": "command",
+          "run": "python3 docs/framework/qa/launch.py {deploy.production_url} --env production --only security,launch",
+          "label": "Production scan: no security or launch errors (rechecked weekly)",
+          "hint": "Fix what launch.py reports: a plugin update, a host change or an expiring certificate can undo launch work"
         },
         {
           "id": "analytics",

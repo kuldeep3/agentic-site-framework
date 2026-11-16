@@ -146,7 +146,7 @@ h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: b
 .hm-grid.cols-2, .hm-compare, .hm-fit { grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr)); }
 .hm-card, .hm-feature, .hm-offer, .hm-testimonial, .hm-stat, .hm-step, .hm-tile, .hm-pain, .hm-compare > *, .hm-fit > *, .hm-person { padding: 1.25rem !important; border: 1px solid var(--line); background: var(--surface); }
 .hm-card > *, .hm-feature > *, .hm-offer > *, .hm-testimonial > *, .hm-step > *, .hm-tile > * { margin: 0 0 0.6rem; }
-.hm-tile.is-dark { background: var(--ink); }
+.hm-tile.is-dark, .hm-testimonial.is-featured, .hm-offer.is-featured { background: var(--ink); } /* FUNCTION: dark tokens need a dark panel to stay legible. */
 .hm-tile.is-orange { background: var(--ink-2); color: #fff; }
 .hm-index__row { display: grid; grid-template-columns: 3rem 1fr; gap: 0.5rem 1rem; padding: 1rem 0; border-top: 1px solid var(--line); }
 .hm-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; list-style: none; padding: 0; }

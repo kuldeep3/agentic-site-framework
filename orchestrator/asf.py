@@ -162,7 +162,11 @@ def run_check(root, state, check):
         hit = [Path(f).relative_to(root).as_posix() for f in files if check["text"] in Path(f).read_text(encoding="utf-8")]
         return not hit, "" if not hit else f"still in {hit[0]}"
     if t == "command":
-        cmd = check["run"].replace("{site_url}", state.get("site_url", ""))
+        # {site_url}, {deploy.staging_url}, {rest_namespace}…: any value from asf.json.
+        missing = [k for k in re.findall(r"\{([a-z_.]+)\}", check["run"]) if not dotted_get(state, k)]
+        if missing:
+            return False, f"needs `asf set {missing[0]} …` first"
+        cmd = re.sub(r"\{([a-z_.]+)\}", lambda m: str(dotted_get(state, m.group(1))), check["run"])
         try:
             r = subprocess.run(shlex.split(cmd), cwd=root, capture_output=True, text=True, timeout=900)
         except (OSError, subprocess.TimeoutExpired) as e:

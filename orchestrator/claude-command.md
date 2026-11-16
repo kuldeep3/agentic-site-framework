@@ -19,6 +19,7 @@ Show where the project is in plain words: the stage, what the gate still needs (
    - Anything only the client can provide (kickoff answers, approvals, photos, prices, sign-offs): ask the user. Never invent facts, numbers, quotes or names; unverified claims go in as `[CONFIRM: …]`.
    - Design (stage 3): design from the client's raw data, never from the wireframe or another client (`docs/framework/stages/3-system.md`). Show three directions and let the user choose.
    - Deployment (stage 4) and measurement (stage 5): follow `docs/07-deployment.md` and `docs/framework/stages/5-run.md`, then record the results with `bin/asf set deploy.staging_url …`, `bin/asf set deploy.production_url …` and `bin/asf set measurement.analytics …`.
+   - Launch readiness (stage 4): `bin/asf check G4` runs `qa/launch.py`; read its full output (`python3 docs/framework/qa/launch.py <url> --env staging`) and fix what the code can fix (theme, plugin, content, images). What only the host can fix (HTTPS redirect, compression, caching, server headers), list for the user with the scan's wording. Run `qa/contrast.js` and `qa/responsive.js` in the browser on the key templates. Never turn a hardening switch off, or skip a check, without the lead's reason.
 2. After each piece, run `bin/asf check` to confirm the check passes. If it doesn't, fix it or report why.
 3. When `ready_for_signoff` is true, **stop**. List the gate's manual items for the lead to confirm. Don't start the next stage.
 
@@ -28,7 +29,7 @@ If a check can't apply to this project (for example, no current website to audit
 Run `bin/asf check` (or `bin/asf check G3` for a named gate) and explain each failure with its fix.
 
 ## `report`: this week's measurement (stage 5, weekly)
-1. Run `bin/asf report`. It collects the week's numbers into `docs/reports/data/<date>.json` (leads from the site's private metrics endpoint, site health and a crawl, and GA4 and Search Console when their environment variables are set) and drafts `docs/reports/<date>.md`.
+1. Run `bin/asf report`. It collects the week's numbers into `docs/reports/data/<date>.json` (leads from the site's private metrics endpoint, site health with a crawl and a security/performance/accessibility rescan, and GA4 and Search Console when their environment variables are set) and drafts `docs/reports/<date>.md`. If the rescan lists new errors, say so in "What happened" and make fixing them the week's action unless something matters more.
 2. Fill what the script couldn't:
    - If a source says "not connected" and a connector for it is available in this session (analytics, Search Console, rank or AI-visibility tracking), pull the same week's numbers through it, add them to the report and name the source.
    - For each tracked prompt under "AI search", check whether the client is cited and where. Say how you checked (an AI-visibility connector, or a web search, which is only a proxy). If you couldn't check, write "not checked", never a guess.

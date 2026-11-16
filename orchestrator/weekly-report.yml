@@ -1,14 +1,16 @@
 # Weekly measurement for a client site, on GitHub Actions.
 # Copy to the client project as .github/workflows/asf-weekly-report.yml.
 #
-# Every Monday it collects last week's numbers (`bin/asf report`) and opens a pull request with
-# the data file and a draft report. The draft's narrative ("The three things") is then written by
+# Every Monday it collects last week's numbers (`bin/asf report`), rescans the live site (security,
+# performance, accessibility, launch settings) and opens a pull request with the data file and a
+# draft report. The draft's narrative ("The three things") is then written by
 # the agent (`/asf report` in Claude Code, or a scheduled Claude Code routine) and reviewed by a
 # person before anything is sent to the client.
 #
 # Repository secrets (Settings → Secrets and variables → Actions):
 #   ASF_WP_USER, ASF_WP_APP_PASSWORD   an admin user and an Application Password on the live site
 #   GA4_PROPERTY_ID, GSC_SITE_URL      optional, with GOOGLE_ACCESS_TOKEN from an auth step below
+#   PSI_API_KEY                        optional: adds Lighthouse scores and Core Web Vitals (PageSpeed Insights)
 name: Weekly site report
 
 on:
@@ -42,6 +44,7 @@ jobs:
           ASF_WP_APP_PASSWORD: ${{ secrets.ASF_WP_APP_PASSWORD }}
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
           GSC_SITE_URL: ${{ secrets.GSC_SITE_URL }}
+          PSI_API_KEY: ${{ secrets.PSI_API_KEY }}
           # GOOGLE_ACCESS_TOKEN: ${{ steps.gauth.outputs.access_token }}
         run: python3 docs/framework/orchestrator/asf.py report
       - name: Open a pull request with the draft

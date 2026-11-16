@@ -17,7 +17,7 @@
 ## Weekly (≈ 15 minutes with AI)
 Run **`/asf report`** in Claude Code. Prompt: [`prompts/09-weekly-report.md`](../prompts/09-weekly-report.md). Template: [`templates/weekly-report.md`](../templates/weekly-report.md).
 
-1. `bin/asf report` pulls the numbers: enquiries and sign-ups from the site itself (by need, page and source), site health and a crawl, plus GA4 and Search Console when connected. Everything is compared with the previous week.
+1. `bin/asf report` pulls the numbers: enquiries and sign-ups from the site itself (by need, page and source), plus GA4 and Search Console when connected, compared with the previous week. It also rescans the live site (`qa/launch.py`: security, performance, accessibility, launch settings, pending updates, failed emails; Lighthouse and Core Web Vitals with `PSI_API_KEY`) and lists any error that's new since last week. A plugin update, a host change or an expiring certificate can undo launch work; this is where it shows.
 2. The agent adds what the script can't reach (connectors for analytics, Search Console, AI visibility) and checks the tracked prompts: is the client cited in ChatGPT, Perplexity and Google AI Overviews?
 3. It writes **three things**: what happened, why we think so, and what we'll do this week, using only sourced numbers.
 4. A person reviews and sends it. Every week, even when nothing changed. A quiet week gets a short report.
@@ -29,10 +29,12 @@ Run **`/asf report`** in Claude Code. Prompt: [`prompts/09-weekly-report.md`](..
 
 ## Quarterly
 - Review against the goal document: is each revenue lever moving?
-- Re-run `crawl.py` and the responsive sweep (plugins, themes and content drift).
+- Re-run `crawl.py`, the responsive sweep and `contrast.js` (plugins, themes and content drift).
+- Review admin accounts, Application Passwords and plugins nobody uses; test a backup restore.
 - Re-check positioning against the truth file: has the business arc changed?
 
 ## Gate G5 (every week)
+- [ ] Production scan clean (`launch.py --env production --only security,launch`; checked by `bin/asf check G5`)
 - [ ] Report sent on the agreed day
 - [ ] Every number in it has a source (an analytics view, a lead record or a screenshot)
 - [ ] One concrete action for the coming week

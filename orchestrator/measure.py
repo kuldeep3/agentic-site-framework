@@ -4,7 +4,10 @@ Used by `bin/asf report`. Standard library only. Sources, each optional:
 
   wordpress       leads from the site's private metrics endpoint (first-party: enquiries, needs,
                   pages, sources). Needs ASF_WP_USER and ASF_WP_APP_PASSWORD (an Application Password).
-  health          the home page's status and response time, plus a full crawl (qa/crawl.py).
+  health          the home page's status and response time, a full crawl (qa/crawl.py) and the launch
+                  scan (qa/launch.py: security, performance, accessibility, launch settings; plus
+                  Lighthouse and Core Web Vitals when PSI_API_KEY is set). New problems since last
+                  week's scan are listed separately.
   ga4             sessions, users, engagement and the site's events, from the GA4 Data API.
                   Needs GA4_PROPERTY_ID and GOOGLE_ACCESS_TOKEN (e.g. `gcloud auth print-access-token`
                   or a CI auth step with the analytics.readonly scope).
@@ -87,7 +90,43 @@ def src_health(state, root, crawl=True):
         summary = (r.stdout.strip().splitlines() or [""])[-1]
         m = re.search(r"(\d+) pages .*?(\d+) error\(s\) · (\d+) warning", summary)
         out["crawl"] = {"summary": summary, **({"pages": int(m.group(1)), "errors": int(m.group(2)), "warnings": int(m.group(3))} if m else {})}
+        out["launch"] = launch_scan(root, state, url)
     return out
+
+
+def launch_scan(root, state, url):
+    """Security, performance, accessibility and launch settings (qa/launch.py), kept small for the data file."""
+    scanner = root / "docs/framework/qa/launch.py"
+    if not scanner.exists():
+        return {"status": "not run", "why": "docs/framework/qa/launch.py is missing (update the framework copy)"}
+    groups = "security,performance,accessibility,launch" + (",lighthouse" if os.environ.get("PSI_API_KEY") else "")
+    cmd = [sys.executable, str(scanner), url, "--only", groups, "--json", "-"]
+    if state.get("deploy", {}).get("production_url"):
+        cmd += ["--env", "production"]
+    try:
+        r = subprocess.run(cmd, cwd=root, capture_output=True, text=True, timeout=900)
+        full = json.loads(r.stdout)
+    except (subprocess.TimeoutExpired, ValueError) as e:
+        return {"status": "error", "error": str(e)[:200]}
+    groups_out = {}
+    for name, g in full["groups"].items():
+        keep = [f for f in g["findings"] if f["level"] in ("error", "warning")]
+        groups_out[name] = {"errors": g["errors"], "warnings": g["warnings"], "passed": g["passed"],
+                            "findings": [{"level": f["level"], "message": f["message"]} for f in keep[:12]]}
+    return {"status": "ok", "env": full["env"], "groups": groups_out, "facts": full["facts"]}
+
+
+def previous_scan(root, to):
+    """Last week's launch scan, from the newest data file before this one."""
+    files = sorted(p for p in (root / "docs/reports/data").glob("*.json") if p.stem < to)
+    for p in reversed(files):
+        try:
+            launch = json.loads(p.read_text(encoding="utf-8"))["sources"]["health"].get("launch", {})
+        except (ValueError, KeyError):
+            continue
+        if launch.get("status") == "ok":
+            return launch
+    return None
 
 
 def src_ga4(rng):
@@ -143,13 +182,20 @@ def src_search_console(rng):
 def collect(root, state, to=None, frm=None, crawl=True):
     rng = week(to, frm)
     prompts = state.get("measurement", {}).get("prompts") or []
+    health = src_health(state, root, crawl)
+    launch = health.get("launch", {})
+    before = previous_scan(root, rng[1]) if launch.get("status") == "ok" else None
+    if before:
+        seen = {f["message"] for g in before["groups"].values() for f in g["findings"]}
+        launch["new_since_last_week"] = [f"{name}: {f['message']}" for name, g in launch["groups"].items()
+                                         for f in g["findings"] if f["level"] == "error" and f["message"] not in seen]
     return {
         "client": state.get("client"), "from": rng[0], "to": rng[1], "previous": {"from": rng[2], "to": rng[3]},
         "generated": datetime.datetime.now().astimezone().isoformat(timespec="minutes"),
         "baseline": state.get("measurement", {}).get("baseline", {}),
         "sources": {
             "wordpress": src_wordpress(state, rng),
-            "health": src_health(state, root, crawl),
+            "health": health,
             "ga4": src_ga4(rng),
             "search_console": src_search_console(rng),
             "ai_search": {"status": "for the agent", "prompts": prompts},
@@ -233,6 +279,36 @@ def draft(data):
     if h.get("status") == "ok" or "home_status" in h:
         crawl = h.get("crawl", {})
         lines.append(f"Home page: HTTP {h.get('home_status')} in {h.get('home_ms', '?')} ms. Crawl: {crawl.get('summary', 'not run')}.")
+        ls = h.get("launch", {})
+        if ls.get("status") == "ok":
+            lines += ["", "| Check | Errors | Warnings | First issue |", "|---|---|---|---|"]
+            for name, g in ls["groups"].items():
+                first = next((f["message"] for f in g["findings"] if f["level"] == "error"), None) or next((f["message"] for f in g["findings"]), "–")
+                lines.append(f"| {name.capitalize()} | {g['errors']} | {g['warnings']} | {first.replace('|', '/')[:110]} |")
+            facts = ls.get("facts", {})
+            bits = []
+            if "cert_days" in facts:
+                bits.append(f"certificate valid for {facts['cert_days']} more days")
+            if "home_kb" in facts:
+                bits.append(f"home page {facts['home_kb']:,} KB in {facts.get('home_requests', '?')} requests")
+            inside = facts.get("inside", {}).get("updates", {})
+            if inside:
+                n = len(inside.get("plugins", [])) + len(inside.get("themes", [])) + (1 if inside.get("wordpress") else 0)
+                bits.append(f"{n} update(s) waiting" if n else "WordPress, plugins and themes up to date")
+            if facts.get("lighthouse"):
+                bits.append("Lighthouse " + "; ".join(f"{p} " + "/".join(str(v) for v in sc.values()) for p, sc in facts["lighthouse"].items()) + " (perf/a11y/best practices/SEO)")
+            if facts.get("core_web_vitals_overall"):
+                bits.append(f"Core Web Vitals (real users): {facts['core_web_vitals_overall']}")
+            if bits:
+                text = "; ".join(bits)
+                lines += ["", text[:1].upper() + text[1:] + "."]
+            new = ls.get("new_since_last_week")
+            if new:
+                lines += ["", "**New since last week:**"] + [f"- {m}" for m in new[:8]]
+            elif new is not None:
+                lines += ["", "No new errors since last week's scan."]
+        elif ls:
+            lines.append(f"Launch scan: {ls.get('status')} ({ls.get('why') or ls.get('error', '')}).")
     else:
         lines.append(f"Couldn't reach {h.get('url')}: {h.get('error', '')}")
     lines += ["", "## Coming up", "- [this month's improvement proposal, if any, with size and price]", ""]
