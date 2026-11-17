@@ -64,6 +64,7 @@ function hm_entity( ?string $key = null ) {
 				'llms_offers'      => array( 'Product lines' => 'products' ), // Hub page whose children llms.txt lists.
 				'work_label'       => 'Customer builds',                     // Heading for case studies in llms.txt and meta.
 				'work_title'       => 'Customer Builds',                     // <title> of the /work/ archive.
+				'contact_label'    => 'where to buy',                        // llms.txt label for the 'booking' link.
 				// Brief form choices (keys are stored on the lead; labels are what visitors see).
 				'brief_form'       => array(
 					'needs'     => array(

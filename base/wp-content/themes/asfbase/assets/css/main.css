@@ -68,6 +68,7 @@ h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: b
 
 /* 3. Sections and the content edge (FUNCTION: one left edge at every width). ----- */
 .hm-main > .alignfull, :where(.wp-block-post-content, .hm-main) > .alignfull { margin-block: 0 !important; }
+.wp-site-blocks > .hm-main, .wp-site-blocks > .hm-footer-part { margin-block-start: 0 !important; } /* The template parts sit flush: no block gap above the page or the footer. */
 .hm-section { position: relative; padding: var(--section-y) var(--gutter) !important; color: var(--text); background: var(--panel, transparent); }
 .hm-section > * { max-width: var(--max); margin-left: max(0px, (100% - var(--max)) / 2) !important; margin-right: auto !important; }
 .hm-section + .hm-section:not(.hm-dark):not(.hm-bone):not(.hm-orange) { border-top: 1px solid var(--line); }
@@ -86,7 +87,9 @@ h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: b
 .is-style-link .wp-block-button__link, .hm-link-arrow { padding: 0 !important; border: 0; background: none !important; color: var(--text) !important; text-decoration: underline !important; }
 
 /* 5. Header and navigation (FUNCTION: desktop nav vs mobile menu at 1080px). ------- */
-.hm-header { position: sticky; top: 0; z-index: 100; background: var(--white); border-bottom: 1px solid rgb(0 0 0 / 0.12); }
+/* FUNCTION: the sticky header. It sticks on the template-part wrapper: .hm-header fills that wrapper exactly, so a sticky .hm-header has no room to move. */
+.hm-header-part { position: sticky; top: 0; z-index: 100; }
+.hm-header { background: var(--white); border-bottom: 1px solid rgb(0 0 0 / 0.12); }
 .hm-header__bar { max-width: calc(var(--max) + 2 * var(--gutter)); margin: 0 auto; padding: 0.75rem var(--gutter); display: flex; align-items: center; gap: 1.25rem; color: #222; }
 .hm-logo { display: inline-flex; align-items: center; gap: 0.5rem; margin-right: auto; color: inherit; text-decoration: none; font-weight: 700; }
 .hm-logo__mark { display: grid; place-items: center; width: 2rem; height: 2rem; background: #222; color: #fff; font-size: 0.8rem; }
@@ -197,6 +200,8 @@ h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: b
 .hm-form { display: grid; gap: 1.25rem; }
 .hm-form fieldset { border: 0; padding: 0; margin: 0; }
 .hm-form legend, .hm-form__q { font-weight: 700; font-size: 1.15rem; margin-bottom: 0.75rem; }
+.hm-form__hint { font: 400 0.875rem/1.4 var(--f-sans); letter-spacing: 0; color: var(--muted); }
+.hm-form .hm-form__then { margin-top: 2.5rem; }
 .hm-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .hm-chip { display: inline-flex; }
 .hm-chip input { position: absolute; opacity: 0; }
@@ -215,9 +220,12 @@ h1, h2, h3, h4 { font-family: var(--f-display); color: var(--text); text-wrap: b
 .hm-form__progress { display: flex; align-items: center; gap: 0.3rem; }
 .hm-form__progress i { width: 1.5rem; height: 4px; background: #ccc; }
 .hm-form__progress i.is-done { background: #222; }
+.hm-form__buttons { display: flex; gap: 1.25rem; align-items: center; }
 .hm-form__back { border: 0; background: none; text-decoration: underline; cursor: pointer; font: inherit; }
 .hm-form__fine, .hm-form__msg { font-size: 0.875rem; color: var(--muted); }
-.hm-hp { position: absolute !important; left: -9999px; } /* FUNCTION: honeypot field stays invisible. */
+/* FUNCTION: the honeypot field stays invisible. It is clipped in place, not pushed off screen (left: -9999px),
+   so qa/responsive.js doesn't report it as content sticking out of the viewport. */
+.hm-hp { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; border: 0 !important; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
 .hm-contact-alt { display: grid; gap: 0.5rem; }
 .hm-contact-alt a { font-size: 1.15rem; font-weight: 600; }
 

@@ -61,8 +61,10 @@ function hm_seed_parse( string $file ): array {
 	$raw  = file_get_contents( $file );
 	$meta = array();
 	if ( preg_match( '/\A\s*<!--(.*?)-->\s*/s', $raw, $m ) ) {
-		foreach ( preg_split( '/\R/', trim( $m[1] ) ) as $line ) {
-			if ( preg_match( '/^\s*([a-z_]+)\s*:\s*(.*)$/', $line, $kv ) ) {
+		// The u flag matters: without it \R also matches byte 0x85, which sits inside
+		// UTF-8 letters (e.g. Gujarati અ = E0 AA 85), so a line splits mid-character.
+		foreach ( preg_split( '/\R/u', trim( $m[1] ) ) as $line ) {
+			if ( preg_match( '/^\s*([a-z_]+)\s*:\s*(.*)$/u', $line, $kv ) ) {
 				$meta[ $kv[1] ] = trim( $kv[2] );
 			}
 		}
@@ -202,7 +204,8 @@ function hm_seed_upsert( string $type, array $meta, string $content, array $medi
 	);
 	$id = wp_insert_post( wp_slash( $postarr ), true );
 	if ( is_wp_error( $id ) ) {
-		WP_CLI::warning( "{$path}: " . $id->get_error_message() );
+		// The database's own error says which field was refused (WordPress only says "invalid data").
+		WP_CLI::warning( "{$path}: " . $id->get_error_message() . ( $GLOBALS['wpdb']->last_error ? ' (' . $GLOBALS['wpdb']->last_error . ')' : '' ) );
 		return 0;
 	}
 

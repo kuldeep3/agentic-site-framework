@@ -30,8 +30,32 @@ $hm_copy = wp_parse_args(
 		'message_hint'  => 'Goals, what’s not working, links…',
 		'submit'        => 'Send my brief',
 		'fine'          => 'A strategist reads every brief and replies within one business day. No spam, no newsletter unless you ask.',
+		'contact_q'     => 'Last step. Where do we reach you?',
+		// Step 3 fields, in order: a key keeps its default label, key => label relabels it.
+		'fields'        => array( 'name', 'email', 'company', 'website', 'phone', 'message' ),
 	)
 );
+
+// Optional translation hook: a site that defines hm_t() (e.g. an i18n layer) gets the fixed labels translated.
+$hm_t = static fn( string $s ): string => function_exists( 'hm_t' ) ? hm_t( $s ) : $s;
+
+// Step 3 inputs. Name and email always show: leads.php refuses a brief without them.
+$hm_inputs = array(
+	'name'    => array( 'Your name *', 'autocomplete="name" required' ),
+	'email'   => array( 'Work email *', 'type="email" autocomplete="email" required' ),
+	'company' => array( 'Company', 'autocomplete="organization"' ),
+	'website' => array( 'Website', 'type="url" inputmode="url" placeholder="https://"' ),
+	'phone'   => array( 'Phone', 'type="tel" autocomplete="tel" inputmode="tel"' ),
+	'message' => array( 'Anything else we should know?', '' ),
+);
+$hm_fields = array();
+foreach ( (array) $hm_copy['fields'] as $hm_key => $hm_label ) {
+	$hm_name = is_int( $hm_key ) ? (string) $hm_label : (string) $hm_key;
+	if ( isset( $hm_inputs[ $hm_name ] ) ) {
+		$hm_fields[ $hm_name ] = is_int( $hm_key ) ? $hm_inputs[ $hm_name ][0] : (string) $hm_label;
+	}
+}
+$hm_fields = array_diff_key( array( 'name' => $hm_inputs['name'][0], 'email' => $hm_inputs['email'][0] ), $hm_fields ) + $hm_fields;
 
 $hm_q1 = 'audit' === $hm_variant ? $hm_copy['needs_q_audit'] : $hm_copy['needs_q'];
 ?>
@@ -41,7 +65,7 @@ $hm_q1 = 'audit' === $hm_variant ? $hm_copy['needs_q_audit'] : $hm_copy['needs_q
 
 	<div class="hm-form__step" data-step="1">
 		<fieldset>
-			<legend><?php echo esc_html( $hm_q1 ); ?> <span class="hm-muted" style="font-size:.5em;font-family:var(--f-sans);letter-spacing:0;font-weight:400">Pick all that apply</span></legend>
+			<legend><?php echo esc_html( $hm_q1 ); ?> <span class="hm-form__hint"><?php echo esc_html( $hm_t( 'Pick all that apply' ) ); ?></span></legend>
 			<div class="hm-chips">
 				<?php $hm_first = true; ?>
 				<?php foreach ( $hm_needs as $hm_value => $hm_label ) : ?>
@@ -61,7 +85,7 @@ $hm_q1 = 'audit' === $hm_variant ? $hm_copy['needs_q_audit'] : $hm_copy['needs_q
 				<?php endforeach; ?>
 			</div>
 		</fieldset>
-		<fieldset style="margin-top:2.5rem">
+		<fieldset class="hm-form__then">
 			<legend><?php echo esc_html( $hm_copy['timeline_q'] ); ?></legend>
 			<div class="hm-chips">
 				<?php foreach ( $hm_timelines as $hm_value => $hm_label ) : ?>
@@ -72,22 +96,24 @@ $hm_q1 = 'audit' === $hm_variant ? $hm_copy['needs_q_audit'] : $hm_copy['needs_q
 	</div>
 
 	<div class="hm-form__step" data-step="3">
-		<p class="hm-form__q">Last step. Where do we reach you?</p>
+		<p class="hm-form__q"><?php echo esc_html( $hm_copy['contact_q'] ); ?></p>
 		<div class="hm-fields">
-			<div class="hm-field"><label for="<?php echo esc_attr( $hm_uid ); ?>-name">Your name *</label><input id="<?php echo esc_attr( $hm_uid ); ?>-name" name="name" autocomplete="name" required></div>
-			<div class="hm-field"><label for="<?php echo esc_attr( $hm_uid ); ?>-email">Work email *</label><input id="<?php echo esc_attr( $hm_uid ); ?>-email" name="email" type="email" autocomplete="email" required></div>
-			<div class="hm-field"><label for="<?php echo esc_attr( $hm_uid ); ?>-company">Company</label><input id="<?php echo esc_attr( $hm_uid ); ?>-company" name="company" autocomplete="organization"></div>
-			<div class="hm-field"><label for="<?php echo esc_attr( $hm_uid ); ?>-website">Website</label><input id="<?php echo esc_attr( $hm_uid ); ?>-website" name="website" type="url" inputmode="url" placeholder="https://"></div>
-			<div class="hm-field"><label for="<?php echo esc_attr( $hm_uid ); ?>-phone">Phone</label><input id="<?php echo esc_attr( $hm_uid ); ?>-phone" name="phone" type="tel" autocomplete="tel"></div>
-			<div class="hm-field is-full"><label for="<?php echo esc_attr( $hm_uid ); ?>-message">Anything else we should know?</label><textarea id="<?php echo esc_attr( $hm_uid ); ?>-message" name="message" placeholder="<?php echo esc_attr( $hm_copy['message_hint'] ); ?>"></textarea></div>
+			<?php foreach ( $hm_fields as $hm_name => $hm_label ) : ?>
+				<?php $hm_id = $hm_uid . '-' . $hm_name; ?>
+				<?php if ( 'message' === $hm_name ) : ?>
+					<div class="hm-field is-full"><label for="<?php echo esc_attr( $hm_id ); ?>"><?php echo esc_html( $hm_t( $hm_label ) ); ?></label><textarea id="<?php echo esc_attr( $hm_id ); ?>" name="message" placeholder="<?php echo esc_attr( $hm_copy['message_hint'] ); ?>"></textarea></div>
+				<?php else : ?>
+					<div class="hm-field"><label for="<?php echo esc_attr( $hm_id ); ?>"><?php echo esc_html( $hm_t( $hm_label ) ); ?></label><input id="<?php echo esc_attr( $hm_id ); ?>" name="<?php echo esc_attr( $hm_name ); ?>" <?php echo $hm_inputs[ $hm_name ][1]; // phpcs:ignore -- fixed attributes from $hm_inputs above. ?>></div>
+				<?php endif; ?>
+			<?php endforeach; ?>
 		</div>
 	</div>
 
 	<div class="hm-form__nav">
 		<div class="hm-form__progress" aria-hidden="true"><i></i><i></i><i></i> <span class="hm-form__count">1 / 3</span></div>
-		<div style="display:flex;gap:1.25rem;align-items:center">
-			<button type="button" class="hm-form__back" hidden>Back</button>
-			<button type="button" class="hm-btn" data-next>Continue <?php echo function_exists( 'asfbase_icon' ) ? asfbase_icon( 'arrow' ) : '→'; // phpcs:ignore ?></button>
+		<div class="hm-form__buttons">
+			<button type="button" class="hm-form__back" hidden><?php echo esc_html( $hm_t( 'Back' ) ); ?></button>
+			<button type="button" class="hm-btn" data-next><?php echo esc_html( $hm_t( 'Continue' ) ); ?> <?php echo function_exists( 'asfbase_icon' ) ? asfbase_icon( 'arrow' ) : '→'; // phpcs:ignore ?></button>
 			<button type="submit" class="hm-btn hm-btn--orange" hidden><?php echo esc_html( $hm_copy['submit'] ); ?> <?php echo function_exists( 'asfbase_icon' ) ? asfbase_icon( 'arrow' ) : '→'; // phpcs:ignore ?></button>
 		</div>
 	</div>

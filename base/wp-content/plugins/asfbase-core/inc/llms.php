@@ -48,12 +48,26 @@ function hm_llms_build(): string {
 	$out[] = '> ' . $e['description'];
 	$out[] = '';
 	$out[] = 'Key facts:';
-	$out[] = '- Also known as: ' . implode( ', ', $e['alternate'] );
-	$out[] = '- Founders: ' . implode( '; ', array_map( fn( $f ) => trim( $f['name'] . ( $f['alt'] ? " ({$f['alt']})" : '' ) ) . ', ' . $f['role'], $e['founders'] ) );
+	// Empty facts are left out: a blank "Founders:" line reads as a broken fact, not a missing one.
+	if ( ! empty( $e['alternate'] ) ) {
+		$out[] = '- Also known as: ' . implode( ', ', (array) $e['alternate'] );
+	}
+	if ( ! empty( $e['founders'] ) ) {
+		$out[] = '- Founders: ' . implode( '; ', array_map( fn( $f ) => trim( $f['name'] . ( ! empty( $f['alt'] ) ? " ({$f['alt']})" : '' ) ) . ', ' . $f['role'], $e['founders'] ) );
+	}
 	foreach ( (array) ( $e['facts'] ?? array() ) as $fact ) {
 		$out[] = '- ' . $fact;
 	}
-	$out[] = '- Contact: ' . $e['phone'] . ' · ' . $e['email'] . ' · book a call: ' . $e['booking'];
+	// Only the contact routes that exist. The booking link may be a site path (/contact/) or a full URL;
+	// its label is the entity's 'contact_label' (e.g. "donate", "where to buy").
+	$booking = (string) ( $e['booking'] ?? '' );
+	if ( '' !== $booking && str_starts_with( $booking, '/' ) ) {
+		$booking = home_url( $booking );
+	}
+	$contact = array_filter( array( $e['phone'] ?? '', $e['email'] ?? '', $booking ? ( $e['contact_label'] ?? 'book a call' ) . ': ' . $booking : '' ) );
+	if ( $contact ) {
+		$out[] = '- Contact: ' . implode( ' · ', $contact );
+	}
 	$out[] = '';
 
 	// Offer pages: the children of one hub page (entity 'llms_offers': heading => hub path).
@@ -81,7 +95,8 @@ function hm_llms_build(): string {
 		$out[] = '';
 	}
 
-	$out[] = '## Company';
+	// Heading for the about/contact pages: 'llms_pages_label' (e.g. "Organisation" for a non-profit).
+	$out[] = '## ' . ( $e['llms_pages_label'] ?? 'Company' );
 	$out[] = '';
 	foreach ( (array) ( $e['llms_pages'] ?? array( 'about', 'contact' ) ) as $path ) {
 		$p = get_page_by_path( $path );

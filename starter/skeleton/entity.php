@@ -61,6 +61,8 @@ function hm_entity( ?string $key = null ) {
 				'footer_note'      => '',
 				// Company pages listed in /llms.txt (services and case studies are listed automatically).
 				'llms_pages'       => array( 'about', 'approach', 'start', 'contact' ),
+				// 'llms_pages_label' => 'Company',     // /llms.txt heading for those pages (e.g. "Organisation").
+				// 'contact_label'    => 'book a call', // /llms.txt label for the booking link (e.g. "donate").
 				// Brief form choices (keys are stored on the lead; labels are what visitors see).
 				'brief_form'       => array(
 					'needs'   => array(
@@ -68,6 +70,8 @@ function hm_entity( ?string $key = null ) {
 						'unsure'  => 'Not sure yet, help me figure it out',
 					),
 					'budgets' => array( 'under-2k' => 'Under $2k / mo', '2k-5k' => '$2k–$5k / mo', '5k-10k' => '$5k–$10k / mo', '10k-plus' => '$10k+ / mo', 'project' => 'A one-off project' ),
+					// Optional 'copy' overrides the questions and small print (see blocks/brief-form/render.php), e.g.
+					// 'copy' => array( 'contact_q' => 'Where do we reach you?', 'fields' => array( 'name', 'email' => 'Email *', 'phone', 'message' ) ),
 				),
 				'footer_cta'       => array(
 					'title'  => '[CONFIRM: closing echo of the hero, with an <em>accent.</em>]',

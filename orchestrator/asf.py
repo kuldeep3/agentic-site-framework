@@ -161,14 +161,16 @@ def run_check(root, state, check):
         return bool(found), f"{found[0]} found on {url}" if found else f"{ids[0]} isn't on {url} (wp-config ASF_GA4_ID / ASF_GTM_ID on production?)"
     if t == "ia_pages":
         # The IA's sitemap (§1) against content/pages: planned pages that don't exist, and skeleton
-        # pages nobody planned. Archives, [x] patterns, legal pages and campaign landing pages are skipped.
+        # pages nobody planned. Archives, [x] patterns, legal pages and campaign landing pages are skipped,
+        # on both sides: legal-* files aren't counted as pages, so IA rows with a legal recipe aren't planned.
         body = section(text, "sitemap")
         if body is None:
             return False, "no Sitemap section in the IA"
         planned = set()
         for row in table_rows(body):
             cells = [c.strip().strip("`") for c in row.strip().strip("|").split("|")]
-            if not cells or not cells[0].startswith("/") or "[" in cells[0] or (len(cells) > 2 and "archive" in cells[2].lower()):
+            recipe = cells[2].lower() if len(cells) > 2 else ""
+            if not cells or not cells[0].startswith("/") or "[" in cells[0] or "archive" in recipe or "legal" in recipe:
                 continue
             planned.add(cells[0].strip("/") or "home")
         pages = {}
