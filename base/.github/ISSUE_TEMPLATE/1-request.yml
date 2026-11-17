@@ -1,0 +1,57 @@
+name: Client request
+description: A change, a new page, a fact to state or a question, from any channel (email, call, chat, a document).
+title: "[Request] "
+labels: ["intake"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One request per issue. Say exactly where it came from, so anyone can go back to the original.
+        Facts reach the site only once the client confirms them (they're copied into `docs/truth.md` with this issue as the source).
+  - type: dropdown
+    id: type
+    attributes:
+      label: What kind of request is it?
+      options:
+        - Content change (copy on a page)
+        - New page
+        - A fact, number or claim the site should state
+        - A question only the client can answer
+        - Campaign
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where did it come from?
+      options:
+        - Email
+        - Call or meeting
+        - Chat (WhatsApp, Slack…)
+        - A document
+        - Raised here directly
+    validations:
+      required: true
+  - type: input
+    id: ref
+    attributes:
+      label: Exactly where
+      description: The email's date and sender, the recording and timestamp, the document and page, or a link.
+      placeholder: "Email from the founder, 14 Nov, subject “Pricing”"
+    validations:
+      required: true
+  - type: textarea
+    id: words
+    attributes:
+      label: The client's own words
+      description: Paste them as they were written or said. Don't paraphrase.
+      render: markdown
+  - type: input
+    id: page
+    attributes:
+      label: Which page?
+      placeholder: "/about/"
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else

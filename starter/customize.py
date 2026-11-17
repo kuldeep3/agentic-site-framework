@@ -135,7 +135,33 @@ def reset_client_files(t, a, fw, ref):
         "| Category codes (what competitors look like) | |\n| Price position | |\n| Colours and textures in their own world (logo, products, photos, place) | |\n\n"
         "## 2. Three directions compared\n| Direction | Verdict |\n|---|---|\n| A | |\n| B | |\n| C | |\n\n"
         "## 3. The chosen design\nPalette (with contrast) · type · shape · layout and section rhythm · one motif · imagery · motion.\n"
-        "It lives in `assets/css/brand.css` and `theme.json`; see `framework/patterns/design-system.md` §9.\n")
+        "It lives in `assets/css/brand.css` and `theme.json`; see `framework/patterns/design-system.md` §9.\n\n"
+        "## 4. Design review\n*Stage 3.2a: each direction previewed on the real pages (`/?asf_direction=a`) and pushed to one Figma file for comments.*\n\n"
+        "| | |\n|---|---|\n| Review file (Figma) | |\n| Shared with | |\n| Chosen direction, by whom, when | |\n| Comments open → issues | |\n")
+    # Requirements intake: raw client material goes in docs/intake/raw/ (git-ignored), items in docs/intake/items/.
+    (docs / "intake/raw").mkdir(parents=True, exist_ok=True)
+    (docs / "intake/raw/.gitkeep").write_text("")  # the folder exists in every clone; its contents never get committed
+    (docs / "intake/README.md").write_text(
+        "# Intake\n\nEvery client request, from any channel, becomes one tracked item with its source "
+        "(see `framework/orchestrator/README.md` § Requirements intake).\n\n"
+        "- `raw/`: drop emails (.eml, .md, .txt), call and meeting transcripts and notes here. **Git-ignored**: client correspondence stays private.\n"
+        "- `/asf intake` reads what's new (and connected inboxes, transcripts, issues and Figma comments), drafts one item per request, and files the ones the lead approves: "
+        "a GitHub issue when `bin/asf github init` has run, otherwise a file in `items/`.\n"
+        "- `bin/asf intake sources` shows what's still unread. Gates G1 and G4 check that nothing is.\n\n"
+        "## After a client call\n\n"
+        "1. **The recording goes to the team's shared drive**, in this client's folder. Never into the repo: it's large, it carries the client's voice, and git keeps it forever.\n"
+        "2. **The transcript goes in `raw/`**, exported from the meeting tool with timestamps (`.vtt`, `.srt`, or a timestamped `.txt` or `.md`). "
+        "Name it date first, so the folder reads in order: `raw/2026-11-17-call-admissions.vtt`.\n"
+        "3. **Start the transcript with two lines** saying where the recording is and who was on the call, so every item can point back to the minute it was said:\n"
+        "   ```\n"
+        "   Recording: <shared-drive link>\n"
+        "   Call: 2026-11-17 · Client: <names> · Us: <names>\n"
+        "   ```\n"
+        "4. **Run `/asf intake`.** Each request on the call becomes one item quoting the client, with a reference like "
+        "\"Call 2026-11-17, recording 14:32, <link>\". You approve the list before anything is filed; the transcript is then marked done.\n\n"
+        "Only have the audio or video? `/asf intake` reads text, not sound: export the transcript from the meeting tool or run the file through a transcription tool first. "
+        "If the meeting tool is connected to Claude Code, skip the file and name the meeting when you run `/asf intake`.\n\n"
+        "What a client says on a call is a request, not a fact: it reaches `docs/truth.md` and the site only once the client confirms it.\n")
     for name in ("05-content-authoring.md", "07-deployment.md"):
         s = (ref / "docs" / name).read_text()
         if name.startswith("05"):

@@ -12,6 +12,10 @@
                                 collect the week's numbers and draft docs/reports/<date>.md
     bin/asf campaign new|links|check|list|report|close …
                                 one offer, one landing page, tagged links, results (see campaigns.py)
+    bin/asf intake sources|add|done|list
+                                requirements from email, calls, issues and docs, one tracked item each (see intake.py)
+    bin/asf github init|sync|confirm-issues [--dry-run]
+                                labels, gate milestones, a Projects board and a gate tracker issue (see github_board.py)
     bin/asf log                 every sign-off, skip and setting, with dates
     bin/asf init --name "Acme" --kind agency --site-url http://acme.test   (the starter runs this)
 
@@ -228,6 +232,10 @@ def run_check(root, state, check):
         sys.path.insert(0, str(HERE))
         import campaigns  # noqa: E402  (beside this file)
         return campaigns.gate(root, state, sys.modules[__name__])
+    if t == "intake_clear":
+        sys.path.insert(0, str(HERE))
+        import intake  # noqa: E402  (beside this file)
+        return intake.gate_check(root, state)
     if t == "recent_file":
         files = [Path(f) for f in globlib.glob(str(root / check["glob"]))]
         if not files:
@@ -368,6 +376,9 @@ def cmd_approve(args):
     save_state(root, state)
     nxt = stage_by(wf, state["stage"])
     print(f"✓ {stage['gate']} ({stage['title']}) signed by {args.by}. Now: {nxt['title']} ({nxt['gate']}).")
+    sys.path.insert(0, str(HERE))
+    import github_board  # noqa: E402  (beside this file)
+    github_board.after_approve(root, state, sys.modules[__name__])
 
 
 def cmd_skip(args):
@@ -441,6 +452,36 @@ def cmd_campaign(args):
     save_state(root, state)
 
 
+def cmd_intake(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import intake  # noqa: E402  (beside this file)
+    core = sys.modules[__name__]
+    if args.action == "sources":
+        intake.sources(root, state)
+    elif args.action == "add":
+        if not args.title:
+            sys.exit('`bin/asf intake add "Title" --type … --source … --ref …`')
+        intake.add(root, state, args, core)
+    elif args.action == "done":
+        if not args.files:
+            sys.exit("`bin/asf intake done docs/intake/raw/<file> …`")
+        intake.done(root, state, args.files, args.note, core)
+    elif args.action == "list":
+        intake.listing(root, state)
+
+
+def cmd_github(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import github_board  # noqa: E402  (beside this file)
+    core = sys.modules[__name__]
+    try:
+        {"init": github_board.init, "sync": github_board.sync, "confirm-issues": github_board.confirm_issues}[args.action](root, state, args, core)
+    except github_board.GhError as e:
+        sys.exit(f"GitHub: {e}")
+
+
 def cmd_log(args):
     root = find_root(); state = load_state(root)
     for e in state.get("log", []):
@@ -464,10 +505,20 @@ def main():
     p.add_argument("--index", action="store_true", help="let search engines index the landing page (default: noindex)")
     p.add_argument("--content", help="creative names for utm_content, comma-separated"); p.add_argument("--url", help="check this site instead of the recorded one")
     p.add_argument("--write", action="store_true"); p.add_argument("--outcome", choices=["keep", "redirect", "unpublish"]); p.add_argument("--to"); p.add_argument("--note")
+    p = sub.add_parser("intake"); p.add_argument("action", choices=["sources", "add", "done", "list"]); p.add_argument("title", nargs="?")
+    p.add_argument("files", nargs="*", help="for `done`: raw files to mark processed"); p.add_argument("--type"); p.add_argument("--source"); p.add_argument("--ref")
+    p.add_argument("--quote"); p.add_argument("--body"); p.add_argument("--page"); p.add_argument("--stage"); p.add_argument("--note")
+    p.add_argument("--local", action="store_true", help="file it in docs/intake/items/ even when GitHub is set up"); p.add_argument("--dry-run", action="store_true")
+    p = sub.add_parser("github"); p.add_argument("action", choices=["init", "sync", "confirm-issues"])
+    p.add_argument("--repo", help="owner/name (default: the repo of the current folder)"); p.add_argument("--owner", help="who owns the board (an org shares one board across clients)")
+    p.add_argument("--project", type=int, help="use this existing project number instead of creating one"); p.add_argument("--dry-run", action="store_true")
     sub.add_parser("log")
     a = ap.parse_args()
+    if a.cmd == "intake" and a.action == "done" and a.title:  # `intake done <file> …`: the first file lands in `title`
+        a.files = [a.title, *a.files]
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
-     "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log}[a.cmd](a)
+     "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log,
+     "intake": cmd_intake, "github": cmd_github}[a.cmd](a)
 
 
 if __name__ == "__main__":

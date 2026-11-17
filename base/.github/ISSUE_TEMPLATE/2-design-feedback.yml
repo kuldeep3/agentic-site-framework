@@ -1,0 +1,32 @@
+name: Design feedback
+description: A comment on the design, from the Figma review file, the staging site or a call.
+title: "[Design] "
+labels: ["intake", "type:design"]
+body:
+  - type: input
+    id: where
+    attributes:
+      label: Where is it?
+      description: A Figma comment link, or the page URL and the section.
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Who raised it?
+      options:
+        - Client
+        - Designer
+        - Team
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: The feedback, in their words
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot (optional)

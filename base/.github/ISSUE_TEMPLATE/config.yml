@@ -1,0 +1,3 @@
+# Issue forms for the website project. Every request becomes one issue with its type and source,
+# so the project board (bin/asf github init) can show where it is. Blank issues stay open for the team.
+blank_issues_enabled: true

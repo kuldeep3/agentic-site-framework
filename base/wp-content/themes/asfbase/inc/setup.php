@@ -32,9 +32,12 @@ add_action(
 
 		wp_enqueue_style( 'asfbase', ASFBASE_URI . '/assets/css/main.css', array( 'global-styles' ), (string) filemtime( $css ) );
 		// Brand layer: the client's palette, type and shape, loaded after the shared components (see docs/04-design-system.md).
-		$brand = ASFBASE_DIR . '/assets/css/brand.css';
+		// During the design review (stage 3), ?asf_direction=b swaps in assets/css/directions/b.css instead.
+		$direction = asfbase_preview_direction();
+		$brand_rel = $direction ? "assets/css/directions/{$direction}.css" : 'assets/css/brand.css';
+		$brand     = ASFBASE_DIR . '/' . $brand_rel;
 		if ( file_exists( $brand ) ) {
-			wp_enqueue_style( 'asfbase-brand', ASFBASE_URI . '/assets/css/brand.css', array( 'asfbase' ), (string) filemtime( $brand ) );
+			wp_enqueue_style( 'asfbase-brand', ASFBASE_URI . '/' . $brand_rel, array( 'asfbase' ), (string) filemtime( $brand ) );
 		}
 		wp_enqueue_script(
 			'asfbase',
@@ -118,5 +121,50 @@ add_action(
 	'init',
 	function () {
 		register_block_pattern_category( 'asfbase', array( 'label' => 'ASF Base sections' ) );
+	}
+);
+
+/**
+ * Design review (stage 3): the direction being previewed, or '' for the real brand layer.
+ *
+ * Each design direction is written as assets/css/directions/<name>.css (a, b, c), so the
+ * client and designer compare them on the real pages (/?asf_direction=b) and in the Figma
+ * file made from those pages, before one becomes brand.css. Never on production: there the
+ * parameter is ignored. Preview pages are noindex and carry a small label saying which
+ * direction is showing.
+ */
+function asfbase_preview_direction(): string {
+	static $direction = null;
+	if ( null === $direction ) {
+		$direction = '';
+		$asked     = isset( $_GET['asf_direction'] ) ? sanitize_key( wp_unslash( $_GET['asf_direction'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification
+		if ( $asked && 'production' !== wp_get_environment_type() && file_exists( ASFBASE_DIR . "/assets/css/directions/{$asked}.css" ) ) {
+			$direction = $asked;
+		}
+	}
+	return $direction;
+}
+
+add_filter(
+	'wp_robots',
+	function ( array $robots ): array {
+		if ( asfbase_preview_direction() ) {
+			$robots['noindex']  = true;
+			$robots['nofollow'] = true;
+		}
+		return $robots;
+	}
+);
+
+add_action(
+	'wp_footer',
+	function () {
+		$direction = asfbase_preview_direction();
+		if ( $direction ) {
+			printf(
+				'<p class="asf-direction-label" style="position:fixed;left:12px;bottom:12px;z-index:9999;margin:0;padding:6px 10px;background:#111;color:#fff;font:600 13px/1.2 system-ui,sans-serif;border-radius:4px">Design review · direction %s</p>',
+				esc_html( strtoupper( $direction ) )
+			);
+		}
 	}
 );

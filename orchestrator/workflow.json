@@ -69,6 +69,12 @@
           "path": "docs/references.md",
           "label": "Competitor and reference teardown done",
           "hint": "Prompt 03 with the site-researcher agent"
+        },
+        {
+          "id": "intake",
+          "type": "intake_clear",
+          "label": "Every raw source in docs/intake/raw/ read and filed",
+          "hint": "/asf intake: one item per request (GitHub issue or docs/intake/items/), then `asf intake done <file>`"
         }
       ],
       "manual": [
@@ -177,6 +183,20 @@
           "hint": "Prompt 07; the client chooses"
         },
         {
+          "id": "review",
+          "type": "state_set",
+          "key": "design.figma_url",
+          "label": "Directions shared for review (Figma file or review link)",
+          "hint": "Stage 3.2a: preview each direction (/?asf_direction=a), push them to one Figma file, then `asf set design.figma_url https://…`"
+        },
+        {
+          "id": "chosen",
+          "type": "state_set",
+          "key": "design.direction",
+          "label": "The client chose a direction",
+          "hint": "Record the client's choice: `asf set design.direction \"B, chosen by <name> on <date>\"`"
+        },
+        {
           "id": "design-layer",
           "type": "not_contains",
           "glob": "wp-content/themes/*/assets/css/brand.css",
@@ -200,6 +220,7 @@
         }
       ],
       "manual": [
+        "Every comment in the design review file is resolved, or filed as a type:design issue",
         "Designer review passes the anti-AI-look checklist",
         "Not a re-skin: palette, type, layout and components differ from the wireframe and from other clients",
         "The client approved the home page and one inner page in the browser"
@@ -218,6 +239,12 @@
         "08-qa-review"
       ],
       "checks": [
+        {
+          "id": "intake",
+          "type": "intake_clear",
+          "label": "Every raw source in docs/intake/raw/ read and filed (nothing the client sent is left unread at launch)",
+          "hint": "/asf intake: one item per request (GitHub issue or docs/intake/items/), then `asf intake done <file>`"
+        },
         {
           "id": "lint-strict",
           "type": "command",

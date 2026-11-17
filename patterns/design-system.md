@@ -96,4 +96,5 @@ One message (≤ 2 lines at desktop), one supporting line, **one** primary CTA +
 - `base/` gives every site `assets/css/main.css`, a **wireframe**: layout and function only (`ASF:WIREFRAME`). Rules marked `FUNCTION` there (menu and form states, the honeypot, the content edge) must survive any design.
 - The client's design lives in `assets/css/brand.css`, loaded after it, plus `theme.json` (palette for the editor, self-hosted fonts). It may restyle every component, change grids and rhythm, add components, or replace `main.css` entirely.
 - Components read **roles**: `--accent`, `--fill` / `--on-fill`, `--accent-soft`, `--muted`, `--line`. Dark sections redefine them, so a design that sets the roles works on light and dark.
+- While directions are compared, each lives in `assets/css/directions/<a|b|c>.css` and is previewed with `/?asf_direction=<x>` (never on production); only the chosen one becomes `brand.css` (`stages/3-system.md` §3.2a).
 - A new site's `brand.css` starts as a placeholder marked `ASF:UNBRANDED`. `lint_content.py` warns while it's there and gate G3 fails.

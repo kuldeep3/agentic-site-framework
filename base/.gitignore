@@ -2,3 +2,21 @@
 /wordpress/
 .DS_Store
 *.log
+
+# Raw client material for /asf intake (emails, call transcripts, notes): private, never committed.
+# The folder itself is kept (.gitkeep) so every clone has it.
+/docs/intake/raw/*
+!/docs/intake/raw/.gitkeep
+
+# Call and meeting recordings live on the team's shared drive, never in the repo.
+/docs/**/*.mp3
+/docs/**/*.m4a
+/docs/**/*.wav
+/docs/**/*.aac
+/docs/**/*.ogg
+/docs/**/*.flac
+/docs/**/*.mp4
+/docs/**/*.mov
+/docs/**/*.webm
+/docs/**/*.mkv
+/docs/**/*.avi

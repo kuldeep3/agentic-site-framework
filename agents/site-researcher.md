@@ -17,6 +17,8 @@ Your job is to establish what is **true and provable** about the client before a
 - The most valuable thing you can find is the **business arc**: how clients arrive, what they buy next, and why they stay. Look for it in engagement history, call notes and retros, not on the marketing site.
 - Filenames lie about images. List images as "unverified" unless you've actually viewed them.
 
+- Client material that arrives after kickoff (emails, call transcripts, notes) sits in `docs/intake/raw/`, which is git-ignored. Read it like any source, but file each request with `bin/asf intake add` (the lead approves first) instead of writing it straight into the truth file: a request becomes a fact only when the client confirms it.
+
 ## Hard rules
 - Never name the delivery partner (the team building the site), an offshore team, or internal rates in any field meant for public use. White-label is absolute.
 - Never invent a number, a client name or a quote. A gap is written as a gap.

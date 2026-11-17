@@ -85,6 +85,7 @@ python3 docs/framework/qa/launch.py https://staging.<domain> --env staging
 
 ## Gate G4: Ship
 
+- [ ] Nothing the client sent is left unread (`bin/asf intake sources`), and no open `type:bug` issue is left on the board
 - [ ] `lint_content.py --strict` and `crawl.py --strict` pass with zero errors (no `[CONFIRM]` in pages, titles, meta descriptions or theme templates)
 - [ ] `launch.py` on staging: zero errors in security, performance, accessibility and launch settings
 - [ ] Lighthouse ≥ 90 on home and two inner pages (or the DevTools scores recorded with a skip, if staging isn't public)

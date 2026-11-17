@@ -32,8 +32,10 @@ Show three directions side by side, scored against the brief, and recommend one.
 6. Imagery: which verified images carry the hero and the cards, and what replaces missing
    photos (typographic covers, product shots).
 7. What makes it unlike the competitors in the teardown, and unlike other clients' sites.
-Then build ONLY the home hero and two sections in the design layer (assets/css/brand.css +
-theme.json), and stop for review.
+Then write each direction as a preview stylesheet, assets/css/directions/a.css, b.css and c.css,
+good enough for the home hero and two sections (fonts self-hosted inside each file). Check each
+at /?asf_direction=a|b|c, run prompt C to put them in Figma, and stop for the client's choice.
+Only the chosen direction becomes assets/css/brand.css + theme.json.
 ```
 
 ## B. Review (run before the client sees anything, and again at G3)
@@ -44,4 +46,28 @@ item by item: pass or fail, with the element at fault. Then check the calm-hero 
 and the layout frame (§6) by running docs/framework/qa/responsive.js.
 Finally, answer honestly: would this look at home next to the reference sites in docs/references.md?
 If not, name the three changes that would close the gap most.
+```
+
+## C. Push the directions to Figma for review (stage 3.2a)
+```text
+Put the design directions for [CLIENT] in one Figma file the client and designer can comment on.
+For each direction (a, b, c): open the home page and [one inner page] at /?asf_direction=<x>, at
+1440px and at 375px, and capture each as a frame with the Figma connector (from the rendered
+page or its code). One Figma page per direction, frames named "<Page> · <width>". Add a page
+"Decision": the three home heroes side by side, with the design brief (docs/04-design-system.md §1)
+and each direction's one-sentence idea as text. If the connector can't capture a page, place a
+full-page screenshot instead and say so.
+Then: `bin/asf set design.figma_url <file URL>`, fill §4 of docs/04-design-system.md, and give me
+the link to share. Don't share it with anyone yourself.
+```
+
+## D. Bring design feedback back (stage 3.2a and G3)
+```text
+Read the comments on [FIGMA FILE URL] with the Figma connector. For each unresolved comment, draft
+one item: the comment in the commenter's words, who wrote it, the frame it's on, and the comment
+link. Show me the list; file the ones I approve with
+`bin/asf intake add "<short title>" --type design --source figma --ref "<comment link>" --quote "<their words>"`.
+If a comment changes the design itself (not just a question), say which rule in brand.css it
+touches. When the client names a direction, record it word for word:
+`bin/asf set design.direction "<letter>, chosen by <name> on <date>: <their words>"`.
 ```

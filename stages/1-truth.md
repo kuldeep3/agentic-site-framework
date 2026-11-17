@@ -18,6 +18,8 @@ Nothing in later stages may say something that isn't in this stage's output. On 
 | Their clients' words | Reviews, testimonials, emails, case notes | Goes into the voice bank |
 | 3–5 reference sites | Lead's choice, or the Researcher proposes | Best-in-class agencies in the same segment. We study their structure, not their words. |
 
+Requirements keep arriving after kickoff, by email, on calls, in GitHub issues and in chat. Each one becomes one tracked item with its source, through **requirements intake** (`/asf intake`, see `orchestrator/README.md`): raw material goes in `docs/intake/raw/` (git-ignored), every request becomes a GitHub issue (or a file in `docs/intake/items/`), and a fact reaches `truth.md` only once the client confirms it, with the issue as its source. After a call, the recording goes to the team's shared drive and its timestamped transcript into `docs/intake/raw/` (steps in the project's `docs/intake/README.md`).
+
 ## Steps
 
 ### 1.1 Goal document
@@ -67,5 +69,6 @@ Prompt: [`prompts/03-reference-teardown.md`](../prompts/03-reference-teardown.md
 - [ ] Every image in `content/media/` was opened, mapped to the client it shows, or deleted
 - [ ] Constraints (white-label, names, regulated claims) are written down, and the names are in `qa/config.json` → `forbidden`
 - [ ] Voice bank has at least 10 verbatim lines
+- [ ] Every raw source in `docs/intake/raw/` was read, and each request in it filed (`bin/asf intake sources`)
 
 **Common failure:** skipping 1.3 because "we know this client." On the first project, the delivery team had years of shared work with the client, and the first messaging still came out generic.

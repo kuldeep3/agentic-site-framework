@@ -1,0 +1,22 @@
+name: Something's broken
+description: A broken link, a form that fails, a layout bug, wrong text.
+title: "[Bug] "
+labels: ["intake", "type:bug"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Page URL
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what should have happened?
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: "iPhone 13, Safari"

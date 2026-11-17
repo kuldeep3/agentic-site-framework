@@ -1,0 +1,33 @@
+# Keeps the project's gate tracker issue and gate milestones in step with asf.json and the gate checks.
+# Copy to the client project as .github/workflows/asf-board-sync.yml after `bin/asf github init`
+# (and commit asf.json, which holds the board's settings).
+#
+# Sync only edits the tracker issue and the milestones, so the built-in GITHUB_TOKEN is enough.
+# Adding issues to the Projects board (intake, confirm-issues) needs a token with the `project`
+# scope, so those run from a person's machine or a Claude Code routine, not from here.
+name: ASF board sync
+
+on:
+  push:
+    branches: [main]
+    paths: ["asf.json", "content/**", "docs/**", "wp-content/**"]
+  schedule:
+    - cron: "30 3 * * *"   # daily at 03:30 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Sync the gate tracker
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bin/asf github sync
