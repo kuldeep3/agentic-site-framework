@@ -53,6 +53,8 @@ function hm_entity( ?string $key = null ) {
 				),
 				// Site-wide copy that templates read (so no client text is hard-coded in the theme).
 				'work_description' => '[CONFIRM: one line on the kinds of work in the case studies]',
+				// With the client's logo file, add 'img' => 'assets/brand/logo.svg' (header), 'img_dark' => 'assets/brand/logo-white.svg'
+				// (dark footer), 'width' and 'height' (the file's ratio): paths are relative to the theme. Without 'img', mark + word show.
 				'logo'             => array( 'mark' => 'AS', 'word' => 'ASF Base' ), // Header: square mark + word.
 				'wordmark'         => array( 'ASF Base' ),                                // Big footer wordmark, one span each.
 				'logos_caption'    => '', // e.g. "Trusted by founder-led brands for more than a decade".

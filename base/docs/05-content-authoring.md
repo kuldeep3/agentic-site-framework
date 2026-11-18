@@ -77,9 +77,9 @@ Every top-level section is a full-width Group: `tagName: section`, `align: full`
 | `hm-note` | Paragraph | Small print: price anchors, "Works best with:" cross-links |
 
 ### Dynamic blocks
-- `<!-- wp:asfbase/hero-visual {"image":"{{media:file.jpg}}"} /-->`: one calm hero image. Add `"photoCase":"<case-slug>","photoChip":"label"` to show a results card (currently off by request).
+- `<!-- wp:asfbase/hero-visual {"image":"{{media:file.jpg}}","alt":"Who, what, where, when","caption":"Optional visible caption"} /-->`: one calm hero image. Always give a real photo its `alt`; without it the image is treated as decorative and hidden from screen readers. Add `"photoCase":"<case-slug>","photoChip":"label"` to show a results card (currently off by request).
 - `<!-- wp:hm/work-grid {"count":4,"layout":"featured"} /-->`: case study cards. `"service":"example-service"` filters by term slug; `"layout":"grid"` gives two columns.
-- `<!-- wp:hm/brief-form /-->`: the 3-step qualifying form (`{"variant":"audit"}` for the audit page).
+- `<!-- wp:hm/brief-form /-->`: the 3-step qualifying form (`{"variant":"audit"}` for the audit page). A link to `/contact/?need=<key>#form` opens it with that need already ticked (keys: `entity.php` → `brief_form` → `needs`), e.g. "Ask about in-house training".
 
 ### Block styles (sidebar → Styles)
 Buttons: default (primary), **Outline**, **Text + arrow** (`is-style-link`). Lists: **Checks**. Paragraph/Heading: **Eyebrow**, **Lead**.

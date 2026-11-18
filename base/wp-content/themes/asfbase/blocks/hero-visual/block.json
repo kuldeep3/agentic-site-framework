@@ -5,11 +5,13 @@
 	"title": "ASF Base Hero visual",
 	"category": "theme",
 	"icon": "art",
-	"description": "One real client image. Optional results card: set photoCase to a case study slug and photoChip to its label.",
+	"description": "One real client image. Give it alt text (who, what, when) and an optional caption; without alt text it is treated as decorative. Optional results card: set photoCase to a case study slug and photoChip to its label.",
 	"attributes": {
 		"photoCase": { "type": "string", "default": "" },
 		"photoChip": { "type": "string", "default": "" },
-		"image": { "type": "string", "default": "" }
+		"image": { "type": "string", "default": "" },
+		"alt": { "type": "string", "default": "" },
+		"caption": { "type": "string", "default": "" }
 	},
 	"supports": { "html": false, "multiple": false },
 	"textdomain": "asfbase",

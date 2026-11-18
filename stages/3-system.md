@@ -47,6 +47,8 @@ Figma is the review surface, not the source of truth: the design lives in `brand
 ### 3.3 Build the design layer
 Write the chosen design into the **design layer**: `assets/css/brand.css` (loaded after the wireframe `main.css`) and `theme.json` (palette for the editor, self-hosted fonts). It may restyle every component, change grids and section rhythm, add components, or replace `main.css` entirely; keep only the rules marked `FUNCTION` there (menu and form states, the honeypot, the single content edge). Re-render the share image and logo mark in the new design.
 
+The client's own logo file goes in the theme's `assets/brand/`, wired through `entity.php` → `logo` (`img` for the header, `img_dark` for the dark footer, `width` and `height`); without it the header shows the mark and word. Mega-menu items in `inc/navigation.php` can carry `'tile' => 'x'`, a plain square the design colours through `.is-x`, instead of an icon.
+
 The `hm-*` class names are **content hooks, not a look** (purpose of each: `docs/05-content-authoring.md`). Add a component only when a brief needs one, and document it.
 
 Then run the **anti-"AI look" review** ([`patterns/design-system.md`](../patterns/design-system.md) §4) on one designed page (home hero + two sections) before building every page.

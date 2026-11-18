@@ -9,7 +9,7 @@ Each recipe was used on a real project. Recipes set the **story order**, not the
 ## Home (8)
 | # | Section | Component | Idea |
 |---|---|---|---|
-| 1 | Hero | `hm-hero hm-dark` + `hero-visual` | Stakes headline, who-we-are line, one CTA, one-line social proof (`hm-trust`), **one** real image of the flagship client |
+| 1 | Hero | `hm-hero hm-dark` + `hero-visual` | Stakes headline, who-we-are line, one CTA, one-line social proof (`hm-trust`), **one** real image of the flagship client, with its `alt` text |
 | 2 | Logos | `hm-marquee` | "Trusted by…" (named clients with permission only) |
 | 3 | Results | `hm-dark` + `hm/work-grid` | 3–4 case cards with one number each |
 | 4 | Voices | `hm-testimonials` | 3 client quotes, proof clause in bold |

@@ -38,7 +38,7 @@ All of it lives in `inc/navigation.php` (theme). It's one PHP array.
 |---|---|---|
 | | | |
 
-It lives in the plugin's `inc/redirects.php`.
+It lives in the plugin's `inc/redirects.php`: exact rows in `hm_redirect_map()`, 410s in `hm_gone_paths()`. When hundreds of thin URLs share one new home (old archives, custom post types, winner or gallery stubs), write one row per prefix (`/press-release/{slug}/ → /news/`); they go in `hm_redirect_prefixes()`, and prefixes with no new home in `hm_gone_prefixes()`. Rules only fire on a 404, so they never shadow a real page.
 
 ## 5. Content types
 - **Pages:** `content/pages/*.html`

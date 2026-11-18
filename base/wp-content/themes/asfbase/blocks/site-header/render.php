@@ -23,10 +23,14 @@ if ( 'landing' === ( $attributes['variant'] ?? '' ) ) :
 	<a class="hm-skip" href="#main">Skip to content</a>
 	<div class="hm-header__bar">
 		<a class="hm-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( asfbase_entity( 'name' ) ); ?>, home">
-			<?php if ( $asfbase_logo['mark'] ) : ?>
-				<span class="hm-logo__mark" aria-hidden="true"><?php echo esc_html( $asfbase_logo['mark'] ); ?></span>
+			<?php if ( ! empty( $asfbase_logo['img'] ) ) : // The client's own logo file (entity.php → logo.img, a path in this theme). ?>
+				<img class="hm-logo__img" src="<?php echo esc_url( ASFBASE_URI . '/' . ltrim( (string) $asfbase_logo['img'], '/' ) ); ?>" alt="" width="<?php echo (int) ( $asfbase_logo['width'] ?? 0 ); ?>" height="<?php echo (int) ( $asfbase_logo['height'] ?? 0 ); ?>">
+			<?php else : ?>
+				<?php if ( $asfbase_logo['mark'] ) : ?>
+					<span class="hm-logo__mark" aria-hidden="true"><?php echo esc_html( $asfbase_logo['mark'] ); ?></span>
+				<?php endif; ?>
+				<span class="hm-logo__word" aria-hidden="true"><?php echo esc_html( $asfbase_logo['word'] ); ?></span>
 			<?php endif; ?>
-			<span class="hm-logo__word" aria-hidden="true"><?php echo esc_html( $asfbase_logo['word'] ); ?></span>
 		</a>
 		<div class="hm-header__actions">
 			<a class="hm-btn hm-btn--sm hm-header__cta" href="#form" data-cta="landing-header"><?php echo esc_html( $asfbase_landing_cta ); ?></a>
@@ -41,10 +45,14 @@ endif;
 	<a class="hm-skip" href="#main">Skip to content</a>
 	<div class="hm-header__bar">
 		<a class="hm-logo" href="<?php echo esc_url( home_url( '/' ) ); ?>" aria-label="<?php echo esc_attr( asfbase_entity( 'name' ) ); ?>, home">
-			<?php if ( $asfbase_logo['mark'] ) : ?>
-				<span class="hm-logo__mark" aria-hidden="true"><?php echo esc_html( $asfbase_logo['mark'] ); ?></span>
+			<?php if ( ! empty( $asfbase_logo['img'] ) ) : // The client's own logo file (entity.php → logo.img, a path in this theme). ?>
+				<img class="hm-logo__img" src="<?php echo esc_url( ASFBASE_URI . '/' . ltrim( (string) $asfbase_logo['img'], '/' ) ); ?>" alt="" width="<?php echo (int) ( $asfbase_logo['width'] ?? 0 ); ?>" height="<?php echo (int) ( $asfbase_logo['height'] ?? 0 ); ?>">
+			<?php else : ?>
+				<?php if ( $asfbase_logo['mark'] ) : ?>
+					<span class="hm-logo__mark" aria-hidden="true"><?php echo esc_html( $asfbase_logo['mark'] ); ?></span>
+				<?php endif; ?>
+				<span class="hm-logo__word" aria-hidden="true"><?php echo esc_html( $asfbase_logo['word'] ); ?></span>
 			<?php endif; ?>
-			<span class="hm-logo__word" aria-hidden="true"><?php echo esc_html( $asfbase_logo['word'] ); ?></span>
 		</a>
 
 		<nav class="hm-nav" aria-label="Primary">
@@ -89,7 +97,11 @@ endif;
 							<?php foreach ( $asfbase_group['items'] as $asfbase_link ) : ?>
 								<li>
 									<a href="<?php echo esc_url( asfbase_url( $asfbase_link['url'] ) ); ?>">
-										<span class="hm-mega__ico" aria-hidden="true"><?php echo asfbase_icon( $asfbase_link['icon'] ?? 'arrow' ); // phpcs:ignore ?></span>
+										<?php if ( ! empty( $asfbase_link['tile'] ) ) : // A plain colour tile instead of an icon (navigation.php → 'tile' => 'x'). ?>
+											<span class="hm-mega__ico is-tile is-<?php echo esc_attr( $asfbase_link['tile'] ); ?>" aria-hidden="true"></span>
+										<?php else : ?>
+											<span class="hm-mega__ico" aria-hidden="true"><?php echo asfbase_icon( $asfbase_link['icon'] ?? 'arrow' ); // phpcs:ignore ?></span>
+										<?php endif; ?>
 										<span class="hm-mega__name"><?php echo esc_html( $asfbase_link['label'] ); ?></span>
 										<span class="hm-mega__desc"><?php echo esc_html( $asfbase_link['desc'] ); ?></span>
 									</a>

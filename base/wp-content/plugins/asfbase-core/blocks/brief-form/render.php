@@ -69,7 +69,7 @@ $hm_q1 = 'audit' === $hm_variant ? $hm_copy['needs_q_audit'] : $hm_copy['needs_q
 			<div class="hm-chips">
 				<?php $hm_first = true; ?>
 				<?php foreach ( $hm_needs as $hm_value => $hm_label ) : ?>
-					<label class="hm-chip"><input type="checkbox" name="needs[]" value="<?php echo esc_attr( $hm_value ); ?>"<?php echo $hm_first ? ' required' : ''; ?>><span><?php echo esc_html( $hm_label ); ?></span></label>
+					<label class="hm-chip"><input type="checkbox" name="needs[]" value="<?php echo esc_attr( $hm_value ); ?>"<?php echo $hm_first ? ' required' : ''; ?><?php echo ( isset( $_GET['need'] ) && sanitize_key( wp_unslash( $_GET['need'] ) ) === (string) $hm_value ) ? ' checked' : ''; // phpcs:ignore WordPress.Security.NonceVerification -- a link can preselect a need (/contact/?need=key#form). ?>><span><?php echo esc_html( $hm_label ); ?></span></label>
 					<?php $hm_first = false; ?>
 				<?php endforeach; ?>
 			</div>

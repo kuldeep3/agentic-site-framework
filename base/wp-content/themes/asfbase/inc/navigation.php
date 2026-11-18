@@ -7,6 +7,9 @@
  * that can't express groups or descriptions. URLs are site-relative.
  * Fill it from docs/02-information-architecture.md §3.
  *
+ * Mega items show an icon ('icon' => 'growth', …) or, with 'tile' => 'x', a plain square the
+ * design layer colours through the class .is-x (e.g. one colour per product line or stage).
+ *
  * @package asfbase
  */
 

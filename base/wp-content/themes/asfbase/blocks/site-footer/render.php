@@ -51,6 +51,10 @@ endif;
 
 	<div class="hm-footer__main">
 		<div class="hm-footer__contact">
+			<?php $asfbase_logo_dark = (array) asfbase_fact( 'logo', array() ); // entity.php → logo.img_dark: the logo for the dark footer. ?>
+			<?php if ( ! empty( $asfbase_logo_dark['img_dark'] ) ) : ?>
+				<img class="hm-footer__logo" src="<?php echo esc_url( ASFBASE_URI . '/' . ltrim( (string) $asfbase_logo_dark['img_dark'], '/' ) ); ?>" alt="<?php echo esc_attr( asfbase_entity( 'name' ) ); ?>" width="<?php echo (int) ( $asfbase_logo_dark['width'] ?? 0 ); ?>" height="<?php echo (int) ( $asfbase_logo_dark['height'] ?? 0 ); ?>" loading="lazy">
+			<?php endif; ?>
 			<p class="hm-label">Talk to us</p>
 			<?php if ( asfbase_entity( 'phone' ) ) : ?>
 				<a class="hm-footer__big-link" href="tel:<?php echo esc_attr( asfbase_entity( 'phone_e164' ) ); ?>" data-cta="footer-phone"><?php echo esc_html( asfbase_entity( 'phone' ) ); ?></a>
