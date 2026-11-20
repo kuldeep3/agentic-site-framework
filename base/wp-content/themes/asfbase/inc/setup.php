@@ -128,8 +128,8 @@ add_action(
  * Design review (stage 3): the direction being previewed, or '' for the real brand layer.
  *
  * Each design direction is written as assets/css/directions/<name>.css (a, b, c), so the
- * client and designer compare them on the real pages (/?asf_direction=b) and in the Figma
- * file made from those pages, before one becomes brand.css. Never on production: there the
+ * client and designer compare them on the real pages (/?asf_direction=b) and on the review
+ * page made from those pages, before one becomes brand.css. Never on production: there the
  * parameter is ignored. Preview pages are noindex and carry a small label saying which
  * direction is showing.
  */

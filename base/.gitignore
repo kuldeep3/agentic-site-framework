@@ -11,6 +11,9 @@
 /docs/intake/raw/*
 !/docs/intake/raw/.gitkeep
 
+# Working files for design reviews (screens, the review page). The client's PDF beside this folder is committed.
+/docs/reviews/_work/
+
 # Call and meeting recordings live on the team's shared drive, never in the repo.
 /docs/**/*.mp3
 /docs/**/*.m4a

@@ -16,7 +16,8 @@ edit or a fix is a *change*: one issue, one branch, one pull request, and the ga
     bin/asf change check <slug> [C3] [--offline] [--json]
         The gate's automated checks and the items a person confirms (default: the current gate).
         --offline skips the checks that need the running site.
-    bin/asf change set <slug> issue|pages|figma|pr|staging|released|result|title|review_after <value>
+    bin/asf change set <slug> issue|pages|review|client_review|pr|staging|released|result|title|review_after <value>
+        review: the team's review page (a Claude artifact). client_review: the client's review issue.
     bin/asf change confirm <slug> C3 [1 2 …] --by "Name"
         One person confirms the items they own (no numbers: list them).
     bin/asf change approve <slug> C3 --by "Name" [--note "…"] [--override "reason"]
@@ -43,7 +44,7 @@ HERE = Path(__file__).resolve().parent
 FRAMEWORK = HERE.parent
 DIR = "docs/changes"
 FRONT = re.compile(r"\A---\n(.*?)\n---\n", re.S)
-KEYS = ["issue", "pages", "figma", "pr", "staging", "released", "result", "title", "review_after"]
+KEYS = ["issue", "pages", "review", "client_review", "pr", "staging", "released", "result", "title", "review_after", "figma"]
 SITE_CODE = ("content/", "wp-content/")  # what a pull request touches when it changes the site
 CONFIRM_CHIP = re.compile(r"hm-confirm|\[CONFIRM")
 
@@ -104,7 +105,7 @@ def read(root, slug):
 
 
 def write(c):
-    order = ["change", "title", "kind", "issue", "pages", "opened", "figma", "pr", "staging", "released", "review_after", "result"]
+    order = ["change", "title", "kind", "issue", "pages", "opened", "review", "client_review", "figma", "pr", "staging", "released", "review_after", "result"]
     keys = [k for k in order if k in c["front"]] + [k for k in c["front"] if k not in order]
     lines = [f"{k}: {json.dumps(c['front'][k], ensure_ascii=False) if k in ('title', 'result') else c['front'][k]}" for k in keys]
     c["path"].write_text("---\n" + "\n".join(lines) + "\n---\n" + c["body"], encoding="utf-8")
@@ -221,7 +222,7 @@ def run_checks(root, state, c, gate, core, offline=False):
             results.append({**check, "status": "skipped", "detail": "needs the running site"})
             continue
         if t == "front_set":
-            v = c["front"].get(check["key"])
+            v = next((c["front"].get(k) for k in (check.get("keys") or [check["key"]]) if c["front"].get(k)), None)
             ok, detail = bool(v), str(v) if v else "not recorded"
         elif t == "change_pages":
             ok, detail = check_pages(root, c)

@@ -32,17 +32,20 @@ Write the brief in `docs/04-design-system.md` §1, then compare **three directio
 
 Prompt: [`prompts/07-design-direction.md`](../prompts/07-design-direction.md).
 
-### 3.2a Show the directions and collect feedback in Figma
-Directions described in a document can't be judged: the client has to see them, on their own content, and comment where everyone can see. So before any page is built in the chosen look:
+### 3.2a Show the directions and collect feedback
+Directions described in a document can't be judged: people have to see them, on the client's own content, and comment where the comment is kept. The team reviews on a **review page** (a Claude artifact); the client gets the same screens as a **PDF on GitHub** and replies on one issue. So before any page is built in the chosen look:
 
 1. **Write each direction as a preview stylesheet:** `assets/css/directions/a.css`, `b.css`, `c.css`. Each restyles the same wireframe (palette, type, section rhythm, the motif) well enough for the home hero and two sections. Self-host any font a direction needs inside its own file.
 2. **Preview them on the real site:** `/?asf_direction=a` (and `b`, `c`) swaps the brand layer on any non-production site; the page is noindex and labelled "Design review · direction A". The home page plus one inner page is enough.
-3. **Push them to one Figma file** for comments: one Figma page per direction, desktop (1440) and phone (375) frames of each previewed page. Use the Figma connector in Claude Code (it captures a rendered page or code as a Figma design); screenshots placed in Figma are the fallback. Add a fourth page, "Decision", with the three side by side and the brief from `docs/04-design-system.md` §1.
-4. **Share it** with the designer and the client, and record it: `bin/asf set design.figma_url https://www.figma.com/design/…`.
-5. **Collect feedback there.** `/asf intake` reads the file's comments and files each one as a `type:design` issue (`--source figma`, the comment link as `--ref`), so design feedback sits on the board with everything else.
-6. **Record the choice in the client's words:** `bin/asf set design.direction "B, chosen by <name> on <date>"`, and §4 of `docs/04-design-system.md`. The chosen file becomes `brand.css`; delete the other two.
+3. **Build one review page** (prompt 07 C): for each direction, a full-page screen of each previewed page at desktop (1440) and phone (375), side by side, every screen numbered (A1, A2, B1…) so a comment can name it. Add a "Decision" section with the three home heroes side by side, the brief from `docs/04-design-system.md` §1 and each direction's one-sentence idea. Working files go in `docs/reviews/_work/` (git-ignored).
+4. **The team reviews it as a Claude artifact.** Publish the review page from Claude Code (it's private until the lead shares it), record it with `bin/asf set design.review_url https://claude.ai/…`, and the lead shares it with the designer. The designer comments on the artifact; a comment sent to Claude reaches the session, which can make the change, reply and resolve the thread. Do this first: the client should never see a direction the designer would fail.
+5. **The client reviews a PDF on GitHub** (prompt 07 E). Print the same page to `docs/reviews/<date>-directions.pdf`, commit and push it, then `bin/asf github review docs/reviews/<date>-directions.pdf --ask "Which direction is yours?"`. That opens one issue (labels `review`, `role:client`) linking the PDF and saying how to reply. The client comments there, or files the "Design feedback" form. A project that isn't on GitHub sends the PDF by email and records `design.client_review` by hand.
+6. **Collect the feedback.** `/asf intake` (prompt 07 D) reads the artifact's comment threads and the comments on the review issue, and files each separate point as a `type:design` issue with its link (`--source artifact` or `--source issue`), so design feedback sits on the board with everything else.
+7. **Record the choice in the client's words:** `bin/asf set design.direction "B, chosen by <name> on <date>"`, and §4 of `docs/04-design-system.md`. The chosen file becomes `brand.css`; delete the other two.
 
-Figma is the review surface, not the source of truth: the design lives in `brand.css` and `theme.json`. When a designer changes something in Figma, bring it back with the Figma connector (it reads the frame's design context) into the CSS, never by eye. After 3.3–3.4, push the built home page and one inner page to the same file ("Build review") for the G3 sign-off.
+The review page and the PDF are where people review, not the source of truth: the design lives in `brand.css` and `theme.json`, and every agreed comment becomes a change there. After 3.3–3.4, add the built home page and one inner page to the review page ("Build review") and send the client a second PDF for the G3 sign-off.
+
+Projects that already review in Figma can keep it: `design.figma_url` still satisfies the gate, and `/asf intake` accepts `--source figma`.
 
 ### 3.3 Build the design layer
 Write the chosen design into the **design layer**: `assets/css/brand.css` (loaded after the wireframe `main.css`) and `theme.json` (palette for the editor, self-hosted fonts). It may restyle every component, change grids and section rhythm, add components, or replace `main.css` entirely; keep only the rules marked `FUNCTION` there (menu and form states, the honeypot, the single content edge). Re-render the share image and logo mark in the new design.
@@ -91,7 +94,7 @@ The brief form posts to the plugin's REST endpoint, stores a private lead and em
 ## Gate G3: System
 
 - [ ] The design is the client's own: `brand.css` no longer says `ASF:UNBRANDED`; the brief in `docs/04-design-system.md` cites the raw data it came from; three directions were compared and the client chose one
-- [ ] The directions were shared for review (`design.figma_url`), the choice is recorded (`design.direction`), and every comment in the review file is resolved or filed as a `type:design` issue
+- [ ] The directions were shared for review (`design.review_url`: the team's review page; the client's PDF and review issue), the choice is recorded (`design.direction`), and every review comment is resolved or filed as a `type:design` issue
 - [ ] **Not a re-skin:** palette, type pairing, layout and section rhythm, and signature components differ from the wireframe and from every other client built with this framework
 - [ ] Designer review passes the anti-"AI look" checklist ([`patterns/design-system.md`](../patterns/design-system.md) §4)
 - [ ] The home hero has one message, one image, one primary CTA (calm-hero rule)

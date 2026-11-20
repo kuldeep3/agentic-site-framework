@@ -22,8 +22,9 @@
                                 after launch: one change, one issue, one pull request, its own gates C1–C4 (see changes.py)
     bin/asf intake sources|add|done|list
                                 requirements from email, calls, issues and docs, one tracked item each (see intake.py)
-    bin/asf github init|sync|confirm-issues [--dry-run]
-                                labels, gate milestones, a Projects board and a gate tracker issue (see github_board.py)
+    bin/asf github init|sync|confirm-issues|review [--dry-run]
+                                labels, gate milestones, a Projects board, a gate tracker issue, and design reviews
+                                sent to the client as a PDF with one issue for their feedback (see github_board.py)
     bin/asf log                 every sign-off, confirmation, skip and setting, with who and when
     bin/asf init --name "Acme" --kind agency --site-url http://acme.test   (the starter runs this)
 
@@ -367,8 +368,9 @@ def run_check(root, state, check):
         last = ((r.stdout.strip() or r.stderr.strip()).splitlines() or [""])[-1][:120]
         return r.returncode == 0, last
     if t == "state_set":
-        v = dotted_get(state, check["key"])
-        return bool(v), str(v) if v else f"`asf set {check['key']} …` not done"
+        keys = check.get("keys") or [check["key"]]  # "keys": any one of them counts
+        v = next((dotted_get(state, k) for k in keys if dotted_get(state, k)), None)
+        return bool(v), str(v) if v else f"`asf set {keys[0]} …` not done"
     if t == "latest_no_placeholders":
         files = [Path(f) for f in globlib.glob(str(root / check["glob"]))]
         if not files:
@@ -681,7 +683,8 @@ def cmd_github(args):
     import github_board  # noqa: E402  (beside this file)
     core = sys.modules[__name__]
     try:
-        {"init": github_board.init, "sync": github_board.sync, "confirm-issues": github_board.confirm_issues}[args.action](root, state, args, core)
+        {"init": github_board.init, "sync": github_board.sync, "confirm-issues": github_board.confirm_issues,
+         "review": github_board.review}[args.action](root, state, args, core)
     except github_board.GhError as e:
         sys.exit(f"GitHub: {e}")
 
@@ -779,7 +782,9 @@ def main():
     p.add_argument("--assign", help="a role (designer, developer…) or a GitHub handle; default: the role the type implies")
     p.add_argument("--local", action="store_true", help="file it in docs/intake/items/ even when GitHub is set up"); p.add_argument("--dry-run", action="store_true")
     p.add_argument("--json", action="store_true", help="for `sources`: machine-readable, for /asf intake")
-    p = sub.add_parser("github"); p.add_argument("action", choices=["init", "sync", "confirm-issues"])
+    p = sub.add_parser("github"); p.add_argument("action", choices=["init", "sync", "confirm-issues", "review"])
+    p.add_argument("file", nargs="?", help="for `review`: the PDF to send to the client (docs/reviews/…)")
+    p.add_argument("--title"); p.add_argument("--ask", help="for `review`: what you need from the client"); p.add_argument("--change", help="for `review`: the change it belongs to")
     p.add_argument("--repo", help="owner/name (default: the repo of the current folder)"); p.add_argument("--owner", help="who owns the board (an org shares one board across clients)")
     p.add_argument("--project", type=int, help="use this existing project number instead of creating one"); p.add_argument("--dry-run", action="store_true")
     sub.add_parser("log")

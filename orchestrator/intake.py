@@ -14,11 +14,11 @@ is copied into docs/truth.md with the issue as its source.
         With a team, the shared drive folder is the inbox (`bin/asf set intake.drive_folder <link>`):
         everyone drops material there and /asf intake copies what's new into raw/ before reading.
         Files a teammate already processed are listed too, so nobody reads them twice.
-    bin/asf intake add "Title" --type fact|question|content|page|design|bug|campaign --source email|call|meeting|issue|chat|doc|figma|other
+    bin/asf intake add "Title" --type fact|question|content|page|design|bug|campaign --source email|call|meeting|issue|chat|doc|artifact|figma|other
                        --ref "where it came from" [--quote "the client's exact words"] [--body "…"] [--page /about/]
                        [--stage Requirement] [--assign role|handle] [--local] [--dry-run]
         File one request. --ref says exactly where (an email's date and sender, a recording and
-        timestamp, an issue or Figma comment link) so anyone can go back to the original.
+        timestamp, an issue or review comment link) so anyone can go back to the original.
         The issue gets the label of the role that acts on it (`role:designer`…) and is assigned to
         whoever holds that role (`bin/asf team`), unless --assign names another role or handle.
     bin/asf intake done <file> […]  [--note "…"]
@@ -27,7 +27,7 @@ is copied into docs/truth.md with the issue as its source.
         Open intake items.
 
 The /asf intake command (claude-command.md) does the reading: it copies new files from the shared
-drive folder, pulls new emails, transcripts, unlabelled issues and Figma comments, drafts one item
+drive folder, pulls new emails, transcripts, unlabelled issues and design review comments, drafts one item
 per request, shows the list to the lead and files the approved ones with `add`.
 
 What's processed is recorded by the file's contents (a hash) in the project log, which is committed:
@@ -40,7 +40,7 @@ import sys
 from pathlib import Path
 
 TYPES = ["fact", "question", "content", "page", "design", "bug", "campaign"]
-SOURCES = ["email", "call", "meeting", "issue", "chat", "doc", "figma", "other"]
+SOURCES = ["email", "call", "meeting", "issue", "chat", "doc", "artifact", "figma", "other"]
 RAW = "docs/intake/raw"
 ITEMS = "docs/intake/items"
 # Recordings: intake can't read them; their transcripts carry the requests.

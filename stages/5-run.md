@@ -36,7 +36,7 @@ After launch nothing reaches the site outside a change: one issue, one branch, o
 
 1. The request is an issue (`/asf intake`). On a new branch: `bin/asf change new <slug> --title "…" --kind fix|content|page|design|rework --issue <n> --pages /…/`.
 2. `/asf change run <slug>` works the current gate; `bin/asf change check <slug>` shows what it still needs and who confirms what.
-3. **C1 Brief** (the lead signs) → **C2 Design** (the designer signs, in the Figma review file) → **C3 Build** (QA signs) → merge → **C4 Release** (the lead signs, once it's live and checked on production). A fix skips C1 and C2; a copy edit skips C2.
+3. **C1 Brief** (the lead signs) → **C2 Design** (the designer signs, on the review page; the client gets a PDF on GitHub for a new page or a restyle) → **C3 Build** (QA signs) → merge → **C4 Release** (the lead signs, once it's live and checked on production). A fix skips C1 and C2; a copy edit skips C2.
 4. The weekly report lists what shipped and what's in progress. Four weeks after release it asks what the change moved: record it with `bin/asf change set <slug> result "…"`.
 
 A new service line, a rebrand or a new site structure is a `rework`: `docs/01-strategy.md` and `docs/02-information-architecture.md` change first, and the client agrees to them, before any page does.

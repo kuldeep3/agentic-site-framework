@@ -7,6 +7,10 @@
     bin/asf github sync [--dry-run]
         Rewrites the gate tracker from asf.json and the current gate's checks, and closes the
         milestone of every signed gate. `asf approve` runs it too, when GitHub is set up.
+    bin/asf github review <file.pdf> [--title "…"] [--ask "…"] [--change <slug>] [--dry-run]
+        Sends a design review to the client: one issue that links the PDF (committed in the repo,
+        usually docs/reviews/) and says how to reply. Their comments on it are their feedback;
+        /asf intake files each point as a type:design item.
     bin/asf github confirm-issues [--dry-run]
         One "Facts to confirm" issue per page, listing its [CONFIRM] chips as checkboxes, on the
         board under Requirement. Pages that already have an open issue are skipped.
@@ -20,6 +24,8 @@ import re
 import shutil
 import subprocess
 import sys
+import urllib.parse
+from pathlib import Path
 
 # The board's columns. Each framework stage maps to one or two of them.
 STAGE_OPTIONS = ["Inbox", "Requirement", "Story", "Design", "Development", "Testing", "Launch", "Live", "Done"]
@@ -53,7 +59,8 @@ LABELS += [(f"type:{t}", c, d) for t, c, d in [
     ("bug", "d73a4a", "Something broken"),
     ("campaign", "0e8a16", "Campaign work (stage 5)"),
 ]]
-LABELS += [(f"source:{s}", "c5def5", f"Arrived by {s}") for s in ("email", "call", "meeting", "issue", "chat", "doc", "figma", "other")]
+LABELS += [(f"source:{s}", "c5def5", f"Arrived by {s}") for s in ("email", "call", "meeting", "issue", "chat", "doc", "artifact", "figma", "other")]
+LABELS += [("review", "5319e7", "A design review sent to the client; their feedback goes in its comments")]
 LABELS += [(f"role:{r}", "bfdadc", f"Next step is with {who}") for r, who in zip(ROLES, (
     "the lead", "the designer", "a developer", "the content owner", "QA", "the client"))]
 
@@ -209,7 +216,8 @@ def tracker_body(root, state, core):
         for s, rec in signed:
             for r in (rec if isinstance(rec, list) else [rec]):
                 lines.append(f"- {s['gate']} {s['title']}: {r['by']}, {r['at'][:10]}" + (f": {r['note']}" if r.get("note") else "") + (" (override)" if r.get("override") else ""))
-    extra = {k: v for k, v in {"Design review": core.dotted_get(state, "design.figma_url"), "Direction chosen": core.dotted_get(state, "design.direction"),
+    extra = {k: v for k, v in {"Design review": core.dotted_get(state, "design.review_url") or core.dotted_get(state, "design.figma_url"),
+                               "Client review": core.dotted_get(state, "design.client_review"), "Direction chosen": core.dotted_get(state, "design.direction"),
                                "Staging": core.dotted_get(state, "deploy.staging_url"), "Production": core.dotted_get(state, "deploy.production_url")}.items() if v}
     if extra:
         lines += ["", "## Links", ""] + [f"- {k}: {v}" for k, v in extra.items()]
@@ -250,6 +258,68 @@ def after_approve(root, state, core):
         print("  GitHub: tracker and milestones updated.")
     except (GhError, OSError, subprocess.TimeoutExpired) as e:
         print(f"  GitHub not updated ({e}). Run `bin/asf github sync` when you're online.")
+
+
+# ── a design review for the client: a PDF in the repo, feedback on one issue ──────────────
+def review(root, state, args, core):
+    dry = args.dry_run
+    if not configured(state) and not dry:
+        sys.exit("GitHub isn't set up for this project: `bin/asf github init --repo owner/name` first.")
+    if not args.file:
+        sys.exit('`bin/asf github review docs/reviews/<name>.pdf [--title "…"] [--ask "…"] [--change <slug>]`')
+    pdf = (root / args.file) if not Path(args.file).is_absolute() else Path(args.file)
+    if not pdf.exists() or pdf.suffix.lower() != ".pdf":
+        sys.exit(f"No PDF at {args.file}. Build it first (docs/framework/prompts/07-design-direction.md E).")
+    try:
+        rel = pdf.resolve().relative_to(root.resolve()).as_posix()
+    except ValueError:
+        sys.exit("The PDF must be inside the project (docs/reviews/), so the client can open it on GitHub.")
+    g = cfg(state)
+    repo = g.get("repo", "<owner/repo>")
+    git = lambda *a: subprocess.run(["git", *a], cwd=root, capture_output=True, text=True)  # noqa: E731
+    branch = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "main"
+    tracked = git("ls-files", "--error-unmatch", rel).returncode == 0
+    clean = tracked and not git("status", "--porcelain", "--", rel).stdout.strip()
+    ahead = git("log", f"origin/{branch}..HEAD", "--oneline", "--", rel)
+    pushed = clean and ahead.returncode == 0 and not ahead.stdout.strip()
+    not_there = (f"{rel} " + ("isn't committed yet" if not tracked else "has changes that aren't pushed yet") + f" on `{branch}`")
+    if not pushed and not dry:  # the issue notifies the client at once: its link must already work
+        sys.exit(f"Not sent: {not_there}. Commit and push the PDF first, so the client's link opens.")
+    url = f"https://github.com/{repo}/blob/{urllib.parse.quote(branch)}/{urllib.parse.quote(rel)}"
+    title = args.title or f"Design review: {pdf.stem.replace('-', ' ')}"
+    ask = (args.ask or "Please look through it and tell us what you think.").strip()
+    body = (f"**For your review:** [{pdf.name}]({url}) (open it, then use the download button for the full file)\n\n{ask}\n\n"
+            "**How to reply**\n"
+            "- Comment on this issue, one point per comment. Every screen in the PDF has a number: say which one you mean.\n"
+            "- To approve, or to choose between options, say so here in your own words.\n\n"
+            "Each point becomes a tracked item. Nothing changes on the site until it's agreed.\n")
+    cmd = ["issue", "create", "--repo", repo, "--title", title, "--body-file", "-", "--label", "review", "--label", "type:design", "--label", "role:client"]
+    handle = next((p["github"] for p in core.people(state, "client") if p.get("github")), None)
+    try:
+        issue = gh(cmd + (["--assignee", handle] if handle else []), dry, stdin=body)
+    except GhError as e:
+        if not handle:
+            raise
+        print(f"  (couldn't assign @{handle}: {str(e)[:100]}; filed unassigned)")
+        issue = gh(cmd, dry, stdin=body)
+    add_to_board(state, issue or "<issue-url>", "Design", dry, g)
+    if dry:
+        print(body)
+        print("Dry run: nothing was created.")
+    else:
+        if args.change:
+            sys.path.insert(0, str(Path(__file__).resolve().parent))
+            import changes  # noqa: E402  (beside this file)
+            c = changes.read(root, args.change)
+            c["front"]["client_review"] = issue
+            changes.write(c)
+        else:
+            core.dotted_set(state, "design.client_review", issue)
+        state["log"].append({"at": core.now(), "event": "design review sent to the client" + (f" (change {args.change})" if args.change else ""), "note": f"{rel} · {issue}"})
+        core.save_state(root, state)
+        print(f"✓ Review issue: {issue}")
+    if not pushed:
+        print(f"  Before the real run: {not_there}. Commit and push the PDF first.")
 
 
 # ── [CONFIRM] chips → issues ────────────────────────────────────────────────────────

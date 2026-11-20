@@ -146,8 +146,8 @@ def reset_client_files(t, a, fw, ref):
         "## 2. Three directions compared\n| Direction | Verdict |\n|---|---|\n| A | |\n| B | |\n| C | |\n\n"
         "## 3. The chosen design\nPalette (with contrast) · type · shape · layout and section rhythm · one motif · imagery · motion.\n"
         "It lives in `assets/css/brand.css` and `theme.json`; see `framework/patterns/design-system.md` §9.\n\n"
-        "## 4. Design review\n*Stage 3.2a: each direction previewed on the real pages (`/?asf_direction=a`) and pushed to one Figma file for comments.*\n\n"
-        "| | |\n|---|---|\n| Review file (Figma) | |\n| Shared with | |\n| Chosen direction, by whom, when | |\n| Comments open → issues | |\n")
+        "## 4. Design review\n*Stage 3.2a: each direction previewed on the real pages (`/?asf_direction=a`) and shown on one review page: a Claude artifact for the team, a PDF on GitHub for the client.*\n\n"
+        "| | |\n|---|---|\n| Review page (Claude artifact) | |\n| Shared with (designer) | |\n| Client's PDF and review issue | |\n| Chosen direction, by whom, when | |\n| Comments open → issues | |\n")
     # Requirements intake: raw client material goes in docs/intake/raw/ (git-ignored), items in docs/intake/items/.
     (docs / "intake/raw").mkdir(parents=True, exist_ok=True)
     (docs / "intake/raw/.gitkeep").write_text("")  # the folder exists in every clone; its contents never get committed
@@ -160,7 +160,7 @@ def reset_client_files(t, a, fw, ref):
         "record the folder once with `bin/asf set intake.drive_folder <link>`. `/asf intake` copies what's new from it into `raw/` before reading, "
         "and never changes anything on the drive. What's been processed is recorded in the project log by the file's contents, "
         "so a transcript one person filed shows as done for everyone (`bin/asf intake sources`).\n"
-        "- `/asf intake` reads what's new (and connected inboxes, transcripts, issues and Figma comments), drafts one item per request, and files the ones the lead approves: "
+        "- `/asf intake` reads what's new (and connected inboxes, transcripts, issues and design review comments), drafts one item per request, and files the ones the lead approves: "
         "a GitHub issue when `bin/asf github init` has run, otherwise a file in `items/`.\n"
         "- `bin/asf intake sources` shows what's still unread. Gates G1 and G4 check that nothing is.\n\n"
         "## After a client call\n\n"

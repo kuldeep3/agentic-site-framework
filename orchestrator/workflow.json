@@ -2,7 +2,7 @@
   "_about": "The Agentic Site Framework as data. asf.py reads this to check gates and say what's next; the /asf command reads it to run a stage. Paths are relative to the client project root. Check types are documented in orchestrator/README.md.",
   "roles": {
     "lead": "Owns the client relationship and signs every gate (a PM, strategist or account owner)",
-    "designer": "Reviews the design in Figma and on the built pages; doesn't push pixels",
+    "designer": "Reviews the design on the review page and the built pages; doesn't push pixels",
     "developer": "Theme, plugin, deployment, hosting and access",
     "content": "Copy, page briefs and the facts behind them",
     "qa": "Runs the checks no script can and reads every page as the buyer",
@@ -56,10 +56,10 @@
         "board": "Design",
         "signs": "designer",
         "checks": [
-          {"id": "review", "type": "front_set", "key": "figma", "label": "Shared for review (Figma file or page)", "hint": "Push the built pages to the review file at 1440 and 375 (docs/framework/prompts/07-design-direction.md C), then `bin/asf change set {change.slug} figma <link>`"}
+          {"id": "review", "type": "front_set", "keys": ["review", "figma"], "label": "Shared with the designer for review (a Claude artifact)", "hint": "Put the changed pages on a review page at 1440 and 375 and publish it as a Claude artifact (docs/framework/prompts/07-design-direction.md C), then `bin/asf change set {change.slug} review <link>`"}
         ],
         "manual": [
-          "Reviewed at 1440 and 375; every comment is resolved or filed as a type:design issue",
+          "Reviewed on the review page at 1440 and 375; every comment is resolved or filed as a type:design issue",
           "Uses the site's own tokens and components, and passes the anti-AI-look checklist"
         ]
       },
@@ -94,7 +94,7 @@
         ],
         "manual": [
           {"text": "Checked on production itself, not only on staging", "role": "developer"},
-          {"text": "The client signed off the change on staging", "kinds": ["page", "design", "rework"]},
+          {"text": "The client signed off the change, on its review issue or on staging", "kinds": ["page", "design", "rework"]},
           "The issue is closed, and the client knows it's live"
         ]
       }
@@ -288,9 +288,9 @@
         {
           "id": "review",
           "type": "state_set",
-          "key": "design.figma_url",
-          "label": "Directions shared for review (Figma file or review link)",
-          "hint": "Stage 3.2a: preview each direction (/?asf_direction=a), push them to one Figma file, then `asf set design.figma_url https://…`"
+          "keys": ["design.review_url", "design.figma_url"],
+          "label": "Directions shared for review (a Claude artifact for the team)",
+          "hint": "Stage 3.2a: preview each direction (/?asf_direction=a), publish them on one review page as a Claude artifact, then `asf set design.review_url https://…`"
         },
         {
           "id": "chosen",
@@ -323,7 +323,7 @@
         }
       ],
       "manual": [
-        {"text": "Every comment in the design review file is resolved, or filed as a type:design issue", "role": "designer"},
+        {"text": "Every review comment, on the review page and on the client's review issue, is resolved or filed as a type:design issue", "role": "designer"},
         {"text": "Designer review passes the anti-AI-look checklist", "role": "designer"},
         {"text": "Not a re-skin: palette, type, layout and components differ from the wireframe and from other clients", "role": "designer"},
         "The client approved the home page and one inner page in the browser"
