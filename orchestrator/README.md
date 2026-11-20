@@ -155,6 +155,8 @@ The project manager's view: which request, page and fix is where. **`asf.json` a
 | **Client review** issues | `bin/asf github review <file.pdf> …`: one issue per design review, linking the PDF; the client's comments on it are their feedback |
 | Pull requests | Link them to issues (`Closes #12`); the board shows what's in review |
 
+When the client can open the repository, run `bin/asf set github.client_visible true` first: the gate tracker then shows only where the project stands, who signed what, the team and the links, with no file paths, commands or check wording (those name the project's private files). Sign-off notes and override reasons stay out too.
+
 Setup: the GitHub CLI logged in with the `project` scope (`gh auth refresh -s project`), then `bin/asf github init --repo owner/name --dry-run` to see every call, and again without `--dry-run`. In the project's board settings, turn on the built-in workflow "Auto-add to project" for `label:intake`, so form-filed issues appear in Inbox. To keep the tracker current without anyone running it, copy `board-sync.yml` to `.github/workflows/asf-board-sync.yml`.
 
 ## Measurement (stage 5, weekly)

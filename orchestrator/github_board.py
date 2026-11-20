@@ -50,7 +50,7 @@ ROLES = ["lead", "designer", "developer", "content", "qa", "client"]
 TYPE_ROLE = {"fact": "client", "question": "client", "content": "content", "page": "developer",
              "design": "designer", "bug": "developer", "campaign": "lead"}
 
-LABELS = [("intake", "ededed", "Came in through /asf intake or an issue form")]
+LABELS = [("intake", "ededed", "A request, with where it came from")]
 LABELS += [(f"type:{t}", c, d) for t, c, d in [
     ("fact", "fbca04", "A fact or number the site states; needs a source"),
     ("question", "fbca04", "Something only the client can answer"),
@@ -194,6 +194,8 @@ def add_to_board(state, issue_url, stage_name, dry=False, g=None):
 def tracker_body(root, state, core):
     wf = core.load_workflow(root)
     cur = core.stage_by(wf, state["stage"])
+    if cfg(state).get("client_visible"):
+        return client_tracker_body(root, state, core, wf, cur)
     lines = [f"**{state['client']}**: where the website project stands. Written by `bin/asf github sync` from `asf.json` "
              "and the gate checks; edits here are overwritten. Sign-offs happen with `bin/asf approve`.", "",
              "| Stage | Gate | Status |", "|---|---|---|"]
@@ -223,6 +225,36 @@ def tracker_body(root, state, core):
     if extra:
         lines += ["", "## Links", ""] + [f"- {k}: {v}" for k, v in extra.items()]
     lines += ["", f"<sub>Last synced {core.now()}</sub>"]
+    return "\n".join(lines) + "\n"
+
+
+def client_tracker_body(root, state, core, wf, cur):
+    """The tracker for a repository the client can open (`asf set github.client_visible true`): where
+    the project stands and who signed what. No file paths, no commands, no check or item wording:
+    those name the project's private files."""
+    lines = [f"**{state['client']}**: where the website project stands. This issue is updated automatically; edits here are overwritten.", "",
+             "| Stage | Gate | Status |", "|---|---|---|"]
+    for i, s in enumerate(wf["stages"], 1):
+        lines.append(f"| {i}. {s['title']} | {s['gate']} | {core.gate_line(state, s, cur['id']).replace('|', '/')} |")
+    res = core.evaluate(root, state, cur)
+    items = core.manual_items(state, cur)
+    lines += ["", f"## Now: {cur['title']} ({cur['gate']})", f"_{cur['question']}_", "",
+              f"- Checks passing: {sum(1 for r in res if r['status'] != 'fail')} of {len(res)}",
+              f"- Confirmed by the people who own them: {sum(1 for i in items if i['confirmed_by'])} of {len(items)}"]
+    signed = [(s, state["gates"].get(s["gate"])) for s in wf["stages"] if state["gates"].get(s["gate"])]
+    if signed:
+        lines += ["", "## Sign-offs", ""]
+        for s, rec in signed:
+            for r in (rec if isinstance(rec, list) else [rec]):
+                lines.append(f"- {s['gate']} {s['title']}: {r['by']}, {r['at'][:10]}")
+    team = [f"- {role}: " + ", ".join(p["name"] + (f" (@{p['github']})" if p.get("github") else "") for p in core.people(state, role))
+            for role in wf.get("roles", {}) if core.people(state, role)]
+    if team:
+        lines += ["", "## Team", ""] + team
+    extra = {k: v for k, v in {"Staging": core.dotted_get(state, "deploy.staging_url"), "Production": core.dotted_get(state, "deploy.production_url")}.items() if v}
+    if extra:
+        lines += ["", "## Links", ""] + [f"- {k}: {v}" for k, v in extra.items()]
+    lines += ["", f"<sub>Last updated {core.now()[:10]}</sub>"]
     return "\n".join(lines) + "\n"
 
 
