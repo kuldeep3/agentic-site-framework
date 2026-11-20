@@ -24,7 +24,9 @@ edit or a fix is a *change*: one issue, one branch, one pull request, and the ga
         The gate's signer signs it. Refused while checks fail or another owner hasn't confirmed.
     bin/asf change drop <slug> --reason "…"
     bin/asf change board <slug> [--dry-run]
-        Puts the issue's card and its role label where the change now stands.
+        Puts the change's issue where it now stands: its Stage on the board, its role label, one
+        status comment (each gate, who signed, who it waits on) and its assignees. `new`, `confirm`,
+        `approve` and `drop` do this too, so nobody has to run a command to see progress.
     bin/asf change pr [--base origin/main]
         For CI: a pull request that changes the site must carry a change whose gates are signed
         up to Build. Before launch it passes: the project's own gates apply.
@@ -105,7 +107,7 @@ def read(root, slug):
 
 
 def write(c):
-    order = ["change", "title", "kind", "issue", "pages", "opened", "review", "client_review", "figma", "pr", "staging", "released", "review_after", "result"]
+    order = ["change", "title", "kind", "issue", "pages", "opened", "assigned", "review", "client_review", "figma", "pr", "staging", "released", "review_after", "result"]
     keys = [k for k in order if k in c["front"]] + [k for k in c["front"] if k not in order]
     lines = [f"{k}: {json.dumps(c['front'][k], ensure_ascii=False) if k in ('title', 'result') else c['front'][k]}" for k in keys]
     c["path"].write_text("---\n" + "\n".join(lines) + "\n---\n" + c["body"], encoding="utf-8")
@@ -370,6 +372,7 @@ def confirm(root, state, a, core):
                              "change": {"slug": c["slug"], "action": "confirm", "gate": gate["gate"], "text": item["text"], "by": a.by}})
         print(f"✓ {c['slug']} {gate['gate']} item {n} confirmed by {a.by}: {item['text']}")
     core.save_state(root, state)
+    board(root, state, c, core, quiet=True)
 
 
 def approve(root, state, a, core):
@@ -442,7 +445,9 @@ def board(root, state, c, core, dry=False, quiet=False):
     repo = g.get("repo", "<owner/repo>")
     st = standing(state, config(root), c)
     stage = st["current"]["board"] if st["status"] == "open" else "Done"
-    role = st["current"]["signs"] if st["status"] == "open" else None
+    role = None
+    if st["status"] == "open":  # the label names who acts next: an owner with an open item, else the signer
+        role = next((i["role"] for i in manual_items(state, c, st["current"], core) if not i["confirmed_by"]), st["current"]["signs"])
     url = issue if issue.startswith("http") else f"https://github.com/{repo}/issues/{issue}"
     number = str(gb.issue_number(url) or issue)
     try:
@@ -451,10 +456,77 @@ def board(root, state, c, core, dry=False, quiet=False):
         for r in gb.ROLES:
             edit += ["--add-label" if r == role else "--remove-label", f"role:{r}"]
         gb.gh(edit, dry)
+        who = issue_status(root, state, c, st, core, gb, repo, number, dry)
         if not quiet or dry:
-            print(f"✓ #{number}: {stage}" + (f", role:{role}" if role else "") + (" (dry run)" if dry else ""))
+            print(f"✓ #{number}: {stage}" + (f", role:{role}" if role else "") + (f", assigned to {', '.join(who)}" if who else "") + (" (dry run)" if dry else ""))
     except (gb.GhError, OSError, subprocess.TimeoutExpired) as e:
         print(f"  GitHub not updated ({str(e)[:120]}). Run `bin/asf change board {c['slug']}` when you're online.")
+
+
+def status_comment(state, c, st, core, plain):
+    """The change's standing, for its issue: each gate, who signed it, and who it waits on now.
+    `plain` (a repository the client can open) leaves out item wording, which can name private files."""
+    lines = [f"<!-- change-status: {c['slug']} -->", f"**Where this stands** (updated automatically; {core.now()[:10]})", "",
+             "| Step | Status |", "|---|---|"]
+    for g in st["gates"]:
+        e = st["signed"].get(g["gate"])
+        if e:
+            status = f"Signed by {e['change'].get('by', '')}, {e['at'][:10]}"
+        elif st["status"] == "dropped":
+            status = "Dropped"
+        elif st["current"] and g["gate"] == st["current"]["gate"]:
+            items = manual_items(state, c, g, core)
+            done = sum(1 for i in items if i["confirmed_by"])
+            status = f"**In progress**: {done} of {len(items)} confirmed. Waiting on {waiting_on(state, c, st, core)}"
+        else:
+            status = "Not started"
+        lines.append(f"| {g['title']} | {status} |")
+    cur = st["current"] if st["status"] == "open" else None
+    if cur and not plain:
+        lines += ["", f"**{cur['title']}: to confirm**", ""] + ["- " + core.manual_line(i) for i in manual_items(state, c, cur, core)]
+    elif cur:
+        got = [f"{i['confirmed_by']} ({i['role']})" for i in manual_items(state, c, cur, core) if i["confirmed_by"]]
+        if got:
+            lines += ["", "Confirmed so far: " + ", ".join(dict.fromkeys(got)) + "."]
+    return "\n".join(lines) + "\n"
+
+
+def issue_status(root, state, c, st, core, gb, repo, number, dry):
+    """Keep one status comment on the change's issue, and assign the issue to whoever it waits on."""
+    g = gb.cfg(state)
+    body = status_comment(state, c, st, core, bool(g.get("client_visible")))
+    marker = f"<!-- change-status: {c['slug']} -->"
+    existing = None
+    if not dry:
+        for cm in gb.gh(["api", f"repos/{repo}/issues/{number}/comments?per_page=100"], parse=True) or []:
+            if marker in (cm.get("body") or ""):
+                existing = cm["id"]
+    if existing:
+        gb.gh(["api", "-X", "PATCH", f"repos/{repo}/issues/comments/{existing}", "-F", "body=@-"], dry, stdin=body, parse=True)
+    else:
+        gb.gh(["issue", "comment", number, "--repo", repo, "--body-file", "-"], dry, stdin=body)
+    # Assign it to whoever acts next. Only people this tool assigned earlier are ever removed.
+    want = []
+    if st["status"] == "open":
+        roles = list(dict.fromkeys(i["role"] for i in manual_items(state, c, st["current"], core) if not i["confirmed_by"])) or [st["current"]["signs"]]
+        want = list(dict.fromkeys(p["github"] for r in roles for p in core.people(state, r) if p.get("github")))
+    mine = [h for h in str(c["front"].get("assigned") or "").split(",") if h]
+    drop = [h for h in mine if h not in want]
+    if want or drop:
+        edit = ["issue", "edit", number, "--repo", repo]
+        if want:
+            edit += ["--add-assignee", ",".join(want)]
+        if drop:
+            edit += ["--remove-assignee", ",".join(drop)]
+        try:
+            gb.gh(edit, dry)
+        except gb.GhError as e:  # someone who can't be assigned there mustn't stop the rest
+            print(f"  (assignees not changed: {str(e)[:110]})")
+            want = mine
+    if not dry and ",".join(want) != ",".join(mine):
+        c["front"]["assigned"] = ",".join(want)
+        write(c)
+    return want
 
 
 def pr_check(root, state, a, core):
