@@ -371,6 +371,7 @@ EXPOSED = [
     ("phpinfo.php", r"phpinfo\(\)|PHP Version", "error", "phpinfo() (server configuration)", "Delete it."),
     ("info.php", r"phpinfo\(\)|PHP Version", "error", "phpinfo() (server configuration)", "Delete it."),
     ("asf.json", r"\"stage\"\s*:", "error", "the project's state file (asf.json)", DEPLOY_FIX),
+    ("asf.local.json", r"^\s*\{", "error", "the project's local settings (asf.local.json)", DEPLOY_FIX),
     ("CLAUDE.md", r"^#", "error", "the project's working notes (CLAUDE.md)", DEPLOY_FIX),
     ("docs/truth.md", r"^#", "error", "the client's truth file (private claims and notes)", DEPLOY_FIX),
     ("docs/00-goal.md", r"^#", "error", "the client's goal document", DEPLOY_FIX),

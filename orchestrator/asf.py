@@ -8,24 +8,33 @@
                                 record a human sign-off; refused while automated checks fail
     bin/asf skip G1 audit --reason "no current site"
     bin/asf set deploy.staging_url https://staging.example.com
+    bin/asf set --local site_url http://acme.test
+                                a value for this machine only (asf.local.json, git-ignored)
+    bin/asf team [add|remove <role> "Name" [--github handle]]
+                                who holds each role: lead, designer, developer, content, qa, client
+    bin/asf confirm G3 2 --by "Name"
+                                one person confirms the gate items they own, before the lead signs
     bin/asf report [--to 2026-11-15] [--no-crawl]
                                 collect the week's numbers and draft docs/reports/<date>.md
     bin/asf campaign new|links|check|list|report|close …
                                 one offer, one landing page, tagged links, results (see campaigns.py)
+    bin/asf change new|list|check|set|confirm|approve|drop|board|pr …
+                                after launch: one change, one issue, one pull request, its own gates C1–C4 (see changes.py)
     bin/asf intake sources|add|done|list
                                 requirements from email, calls, issues and docs, one tracked item each (see intake.py)
     bin/asf github init|sync|confirm-issues [--dry-run]
                                 labels, gate milestones, a Projects board and a gate tracker issue (see github_board.py)
-    bin/asf log                 every sign-off, skip and setting, with dates
+    bin/asf log                 every sign-off, confirmation, skip and setting, with who and when
     bin/asf init --name "Acme" --kind agency --site-url http://acme.test   (the starter runs this)
 
-State lives in asf.json at the project root (commit it: it's the project's audit trail).
-Stages, gates and checks come from workflow.json. Standard library only.
+State lives in asf.json at the project root, and the audit trail in docs/log/, one file per person
+(commit both). Stages, gates, roles and checks come from workflow.json. Standard library only.
 """
 import argparse
 import datetime
 import glob as globlib
 import json
+import os
 import re
 import shlex
 import subprocess
@@ -34,6 +43,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 STATE_FILE = "asf.json"
+LOCAL_FILE = "asf.local.json"   # this machine only (git-ignored): `asf set --local site_url …`
+LOG_DIR = "docs/log"            # the audit trail: one append-only .jsonl per person, so branches never conflict
+LOG_EARLIER = "0-earlier.jsonl"  # entries that were in asf.json before the log moved here
+_LOADED = {}                    # root → what load_state read, so save_state writes only what changed
 # An unfilled template placeholder: [like this]. Not a checkbox, a link, or a [CONFIRM: …] chip.
 PLACEHOLDER = re.compile(r"\[(?!\s\]|[xX]\]|CONFIRM)([^\]\n]{1,200})\](?!\()")
 HEADING = re.compile(r"^(#{1,4})\s+(.*)$", re.M)
@@ -48,21 +61,114 @@ def find_root():
     sys.exit(f"No {STATE_FILE} here or above. Run `asf init` in the project root (the starter does this).")
 
 
+def actor():
+    """Who is running this command: ASF_USER, else git's user.name, else the login name."""
+    who = os.environ.get("ASF_USER", "").strip()
+    if not who:
+        try:
+            who = subprocess.run(["git", "config", "user.name"], capture_output=True, text=True, timeout=5).stdout.strip()
+        except (OSError, subprocess.TimeoutExpired):
+            who = ""
+    return who or os.environ.get("USER") or os.environ.get("USERNAME") or "unknown"
+
+
+def _flat(data, prefix=""):
+    for k, v in data.items():
+        if isinstance(v, dict):
+            yield from _flat(v, f"{prefix}{k}.")
+        else:
+            yield prefix + k, v
+
+
+def _when(entry):
+    try:
+        return datetime.datetime.fromisoformat(entry.get("at", "")).timestamp()
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def load_log(root):
+    """Every entry in docs/log/*.jsonl. A line git or a person mangled is skipped, never fatal."""
+    entries = []
+    for f in sorted((root / LOG_DIR).glob("*.jsonl")):
+        for line in f.read_text(encoding="utf-8").splitlines():
+            try:
+                e = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(e, dict):
+                entries.append(e)
+    return entries
+
+
 def load_state(root):
-    return json.loads((root / STATE_FILE).read_text(encoding="utf-8"))
+    """asf.json, plus the log from docs/log/ and this machine's asf.local.json laid over it.
+
+    The log is one append-only file per person, so two people on two branches never touch the same
+    lines. asf.local.json holds what differs per machine (a local site address); it's git-ignored
+    and save_state never copies its values into asf.json.
+    """
+    state = json.loads((root / STATE_FILE).read_text(encoding="utf-8"))
+    legacy = state.pop("log", None) or []  # projects made before the log moved to docs/log/
+    log = sorted(legacy + load_log(root), key=_when)
+    local, under = {}, {}
+    if (root / LOCAL_FILE).exists():
+        local = dict(_flat(json.loads((root / LOCAL_FILE).read_text(encoding="utf-8"))))
+        for key, value in local.items():
+            under[key] = dotted_get(state, key)
+            dotted_set(state, key, value)
+    state["log"] = log
+    _LOADED[str(root)] = {"n": len(log), "legacy": legacy, "local": local, "under": under}
+    return state
 
 
 def save_state(root, state):
-    (root / STATE_FILE).write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    info = _LOADED.get(str(root)) or {"n": 0, "legacy": [], "local": {}, "under": {}}
+    log = state.get("log", [])
+    out = json.loads(json.dumps({k: v for k, v in state.items() if k != "log"}))
+    for key, value in info["local"].items():  # this machine's values stay in asf.local.json
+        if dotted_get(out, key) == value:
+            dotted_set(out, key, info["under"][key]) if info["under"][key] is not None else dotted_del(out, key)
+    (root / STATE_FILE).write_text(json.dumps(out, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    logdir = root / LOG_DIR
+    new = log[info["n"]:]
+    if info["legacy"] and not (logdir / LOG_EARLIER).exists():
+        logdir.mkdir(parents=True, exist_ok=True)
+        (logdir / LOG_EARLIER).write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in info["legacy"]), encoding="utf-8")
+    if new:
+        who = actor()
+        logdir.mkdir(parents=True, exist_ok=True)
+        name = re.sub(r"[^a-z0-9]+", "-", who.lower()).strip("-") or "unknown"
+        with open(logdir / f"{name}.jsonl", "a", encoding="utf-8") as f:
+            for e in new:
+                e.setdefault("by", who)
+                f.write(json.dumps(e, ensure_ascii=False) + "\n")
+    _LOADED[str(root)] = {**info, "n": len(log), "legacy": []}
 
 
 def load_workflow(root):
+    """workflow.json, with every manual item split into its text (`manual`) and who confirms it (`manual_roles`)."""
     local = root / "docs/framework/orchestrator/workflow.json"
-    return json.loads((local if local.exists() else HERE / "workflow.json").read_text(encoding="utf-8"))
+    wf = json.loads((local if local.exists() else HERE / "workflow.json").read_text(encoding="utf-8"))
+    for s in wf["stages"]:
+        s.setdefault("signs", "lead")
+        items = [m if isinstance(m, dict) else {"text": m} for m in s["manual"]]
+        s["manual"] = [m["text"] for m in items]
+        s["manual_roles"] = [m.get("role") or s["signs"] for m in items]
+    return wf
 
 
 def now():
     return datetime.datetime.now().astimezone().isoformat(timespec="minutes")
+
+
+def dotted_del(data, key):
+    parts = key.split(".")
+    for part in parts[:-1]:
+        data = data.get(part)
+        if not isinstance(data, dict):
+            return
+    data.pop(parts[-1], None)
 
 
 def dotted_get(data, key):
@@ -85,6 +191,48 @@ def stage_by(workflow, key):
         if key in (s["id"], s["gate"], s["gate"].lower()):
             return s
     sys.exit(f"Unknown stage or gate: {key}")
+
+
+# ── team: who holds each role, and what each person has confirmed ─────────────────────
+def people(state, role):
+    return [p for p in (state.get("team") or {}).get(role, []) if p.get("name")]
+
+
+def roles_of(state, name):
+    return {role for role in (state.get("team") or {}) if any(p["name"].lower() == name.lower() for p in people(state, role))}
+
+
+def confirmations(state, stage):
+    """{item number: log entry} for the gate's manual items confirmed with `asf confirm` since the gate
+    was last signed. An item whose wording has changed since doesn't count."""
+    rec = state["gates"].get(stage["gate"])
+    last = rec[-1] if isinstance(rec, list) and rec else rec if isinstance(rec, dict) else None
+    since = _when(last) if last else -1.0
+    out = {}
+    for e in state.get("log", []):
+        c = e.get("confirm")
+        if isinstance(c, dict) and c.get("gate") == stage["gate"] and _when(e) > since:
+            n = c.get("n")
+            if isinstance(n, int) and 1 <= n <= len(stage["manual"]) and stage["manual"][n - 1] == c.get("text"):
+                out[n] = e
+    return out
+
+
+def manual_items(state, stage):
+    """The gate's manual items with the role that confirms each, who holds it, and who has confirmed."""
+    done = confirmations(state, stage)
+    out = []
+    for n, (text, role) in enumerate(zip(stage["manual"], stage["manual_roles"]), 1):
+        e = done.get(n)
+        out.append({"n": n, "text": text, "role": role, "people": [p["name"] for p in people(state, role)],
+                    "confirmed_by": e["confirm"].get("by") if e else None, "confirmed_at": e["at"][:10] if e else None})
+    return out
+
+
+def manual_line(item):
+    who = item["role"] + (": " + ", ".join(item["people"]) if item["people"] else "")
+    done = f" · confirmed by {item['confirmed_by']}, {item['confirmed_at']}" if item["confirmed_by"] else ""
+    return f"[{'x' if item['confirmed_by'] else ' '}] {item['n']}. {item['text']}  ({who}{done})"
 
 
 # ── markdown helpers ────────────────────────────────────────────────────────────
@@ -232,6 +380,10 @@ def run_check(root, state, check):
         sys.path.insert(0, str(HERE))
         import campaigns  # noqa: E402  (beside this file)
         return campaigns.gate(root, state, sys.modules[__name__])
+    if t == "changes":
+        sys.path.insert(0, str(HERE))
+        import changes  # noqa: E402  (beside this file)
+        return changes.gate(root, state, sys.modules[__name__])
     if t == "intake_clear":
         sys.path.insert(0, str(HERE))
         import intake  # noqa: E402  (beside this file)
@@ -267,7 +419,7 @@ def cmd_init(args):
         "framework": "Agentic Site Framework",
         "client": args.name, "kind": args.kind, "site_url": args.site_url, "rest_namespace": args.rest_namespace,
         "created": now(), "stage": "truth",
-        "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
+        "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "team": {},
     }
     save_state(root, state)
     print(f"Created {STATE_FILE}: {args.name} ({args.kind}), stage 1 (Truth).")
@@ -295,6 +447,16 @@ def cmd_status(args):
     for k in ("deploy", "measurement"):
         if state.get(k):
             print(f"{k.capitalize()}: " + ", ".join(f"{a}={b}" for a, b in state[k].items()))
+    team = [f"{role}: {', '.join(p['name'] for p in people(state, role))}" for role in wf.get("roles", {}) if people(state, role)]
+    print("Team: " + (" · ".join(team) if team else "nobody named yet (`asf team add lead \"Name\"`)"))
+    if (root / "docs/changes").exists() and any((root / "docs/changes").glob("*.md")):
+        sys.path.insert(0, str(HERE))
+        import changes  # noqa: E402  (beside this file)
+        cfg = changes.config(root)
+        open_ = [s for s in changes.slugs(root) if changes.standing(state, cfg, changes.read(root, s))["status"] == "open"]
+        print(f"Changes: {len(open_)} open" + (" (" + ", ".join(open_[:5]) + ("…" if len(open_) > 5 else "") + "): `asf change list`" if open_ else ""))
+    if state.get("framework_version"):
+        print(f"Framework: {state['framework_version']}")
     print("Next: `asf next`")
 
 
@@ -303,7 +465,8 @@ def cmd_check(args):
     stage = stage_by(wf, args.gate or state["stage"])
     res = evaluate(root, state, stage)
     if args.json:
-        print(json.dumps({"gate": stage["gate"], "stage": stage["id"], "checks": res, "manual": stage["manual"]}, indent=2, ensure_ascii=False))
+        print(json.dumps({"gate": stage["gate"], "stage": stage["id"], "checks": res, "manual": stage["manual"],
+                          "manual_items": manual_items(state, stage)}, indent=2, ensure_ascii=False))
         return
     print(f"Gate {stage['gate']} ({stage['title']}): automated checks")
     for r in res:
@@ -314,9 +477,9 @@ def cmd_check(args):
         print(line)
         if r["status"] == "fail":
             print(f"      → {r['hint']}")
-    print("For a human to confirm at sign-off:")
-    for m in stage["manual"]:
-        print(f"  [ ] {m}")
+    print(f"For a person to confirm (`asf confirm {stage['gate']} <number> --by \"Name\"`), before the {stage['signs']} signs:")
+    for item in manual_items(state, stage):
+        print(f"  {manual_line(item)}")
     sys.exit(0 if all(r["status"] != "fail" for r in res) else 1)
 
 
@@ -333,6 +496,8 @@ def cmd_next(args):
         "todo": [{"id": r["id"], "label": r["label"], "detail": r["detail"], "hint": r["hint"]} for r in failing],
         "ready_for_signoff": not failing,
         "manual": stage["manual"],
+        "manual_items": manual_items(state, stage),
+        "signs": {"role": stage["signs"], "people": [p["name"] for p in people(state, stage["signs"])]},
     }
     if args.json:
         print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -345,9 +510,10 @@ def cmd_next(args):
             print(f"  ✗ {r['label']}" + (f" ({r['detail']})" if r["detail"] else ""))
             print(f"      → {r['hint']}")
     else:
-        print(f"Automated checks pass. Ready for sign-off: confirm these with the lead, then `asf approve {stage['gate']} --by \"Name\"`:")
-        for m in stage["manual"]:
-            print(f"  [ ] {m}")
+        print(f"Automated checks pass. Each owner confirms their items (`asf confirm {stage['gate']} <number> --by \"Name\"`), "
+              f"then the {stage['signs']} signs: `asf approve {stage['gate']} --by \"Name\"`:")
+        for item in manual_items(state, stage):
+            print(f"  {manual_line(item)}")
 
 
 def cmd_approve(args):
@@ -362,17 +528,35 @@ def cmd_approve(args):
         for r in failing:
             print(f"  ✗ {r['label']}" + (f" ({r['detail']})" if r["detail"] else ""))
         sys.exit("Fix them, or sign with --override \"reason\" (recorded in the log).")
+    # Items another role owns need that person's own confirmation, once someone holds the role.
+    items = manual_items(state, stage)
+    mine = roles_of(state, args.by) | {stage["signs"]}
+    waiting = [i for i in items if i["people"] and not i["confirmed_by"] and i["role"] not in mine]
+    if waiting and not args.override:
+        print(f"Not signed: {len(waiting)} item(s) are waiting for the person who owns them:")
+        for i in waiting:
+            print(f"  {manual_line(i)}")
+        sys.exit(f"They confirm with `asf confirm {stage['gate']} <number> --by \"Name\"`, or sign with --override \"reason\" (recorded in the log).")
+    signers = [p["name"] for p in people(state, stage["signs"])]
+    if signers and args.by.lower() not in [n.lower() for n in signers]:
+        print(f"  Note: {stage['gate']} is the {stage['signs']}'s to sign ({', '.join(signers)}); recorded as signed by {args.by}.")
     record = {"by": args.by, "at": now(), "note": args.note or "", "manual_confirmed": stage["manual"]}
-    if failing:
+    confirmed = {i["text"]: i["confirmed_by"] for i in items if i["confirmed_by"]}
+    if confirmed:
+        record["confirmed_by"] = confirmed
+    if failing or waiting:
         record["override"] = args.override
+    if failing:
         record["failing"] = [r["id"] for r in failing]
+    if waiting:
+        record["unconfirmed"] = [i["text"] for i in waiting]
     if stage.get("repeat"):
         state["gates"].setdefault(stage["gate"], []).append(record)
     else:
         state["gates"][stage["gate"]] = record
         ids = [s["id"] for s in wf["stages"]]
         state["stage"] = ids[min(ids.index(stage["id"]) + 1, len(ids) - 1)]
-    state["log"].append({"at": record["at"], "event": f"{stage['gate']} signed by {args.by}" + (" (override)" if failing else ""), "note": args.note or args.override or ""})
+    state["log"].append({"at": record["at"], "event": f"{stage['gate']} signed by {args.by}" + (" (override)" if failing or waiting else ""), "note": args.note or args.override or ""})
     save_state(root, state)
     nxt = stage_by(wf, state["stage"])
     print(f"✓ {stage['gate']} ({stage['title']}) signed by {args.by}. Now: {nxt['title']} ({nxt['gate']}).")
@@ -398,6 +582,19 @@ def cmd_set(args):
         value = json.loads(args.value) if args.value[:1] in "[{0123456789" else args.value
     except json.JSONDecodeError:
         value = args.value
+    if args.local:  # this machine only: never written to asf.json, never logged
+        path = root / LOCAL_FILE
+        local = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+        dotted_set(local, args.key, value)
+        path.write_text(json.dumps(local, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        print(f"{args.key} = {args.value}  (this machine only: {LOCAL_FILE})")
+        try:
+            ignored = subprocess.run(["git", "check-ignore", "-q", LOCAL_FILE], cwd=root, timeout=5).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            ignored = True
+        if not ignored:
+            print(f"  Add `/{LOCAL_FILE}` to .gitignore so it's never committed.")
+        return
     dotted_set(state, args.key, value)
     state["log"].append({"at": now(), "event": f"set {args.key}", "note": args.value})
     save_state(root, state)
@@ -452,13 +649,20 @@ def cmd_campaign(args):
     save_state(root, state)
 
 
+def cmd_change(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import changes  # noqa: E402  (beside this file)
+    changes.main(root, state, args, sys.modules[__name__])
+
+
 def cmd_intake(args):
     root = find_root(); state = load_state(root)
     sys.path.insert(0, str(HERE))
     import intake  # noqa: E402  (beside this file)
     core = sys.modules[__name__]
     if args.action == "sources":
-        intake.sources(root, state)
+        intake.sources(root, state, args.json)
     elif args.action == "add":
         if not args.title:
             sys.exit('`bin/asf intake add "Title" --type … --source … --ref …`')
@@ -485,7 +689,59 @@ def cmd_github(args):
 def cmd_log(args):
     root = find_root(); state = load_state(root)
     for e in state.get("log", []):
-        print(f"{e['at'][:16]}  {e['event']}" + (f"  · {e['note']}" if e.get("note") else ""))
+        print(f"{e.get('at', '')[:16]}  {e.get('by', ''):<14.14} {e.get('event', '')}" + (f"  · {e['note']}" if e.get("note") else ""))
+
+
+def cmd_team(args):
+    root = find_root(); state = load_state(root); wf = load_workflow(root)
+    roles = wf.get("roles", {})
+    if args.action == "list":
+        for role, what in roles.items():
+            names = ", ".join(p["name"] + (f" (@{p['github']})" if p.get("github") else "") for p in people(state, role))
+            print(f"  {role:<10} {names or '—':<32} {what}")
+        print('Add someone: `asf team add designer "Name" --github handle`. One person can hold several roles.')
+        return
+    if args.role not in roles:
+        sys.exit(f"Roles: {', '.join(roles)}")
+    if not args.name:
+        sys.exit(f'`bin/asf team {args.action} {args.role} "Name"`')
+    members = [p for p in state.setdefault("team", {}).get(args.role, []) if p.get("name", "").lower() != args.name.lower()]
+    if args.action == "add":
+        members.append({"name": args.name, **({"github": args.github.lstrip("@")} if args.github else {})})
+    state["team"][args.role] = members
+    state["log"].append({"at": now(), "event": f"team: {args.name} {'is' if args.action == 'add' else 'is no longer'} {args.role}", "note": ""})
+    save_state(root, state)
+    print(f"{args.role}: " + (", ".join(p["name"] for p in members) or "—"))
+    sys.path.insert(0, str(HERE))
+    import github_board  # noqa: E402  (beside this file)
+    github_board.after_approve(root, state, sys.modules[__name__])
+
+
+def cmd_confirm(args):
+    """One person confirms the gate items they own. The sign-off itself stays with `asf approve`."""
+    root = find_root(); state = load_state(root); wf = load_workflow(root)
+    stage = stage_by(wf, args.gate)
+    if not args.items:
+        for item in manual_items(state, stage):
+            print(f"  {manual_line(item)}")
+        return
+    if not args.by:
+        sys.exit('--by "Name" is required: a confirmation is one person\'s word.')
+    bad = [n for n in args.items if not 1 <= n <= len(stage["manual"])]
+    if bad:
+        sys.exit(f"{stage['gate']} has items 1 to {len(stage['manual'])} (`asf confirm {stage['gate']}` lists them).")
+    for n in args.items:
+        text, role = stage["manual"][n - 1], stage["manual_roles"][n - 1]
+        holders = [p["name"] for p in people(state, role)]
+        if holders and args.by.lower() not in [h.lower() for h in holders]:
+            print(f"  Note: item {n} is the {role}'s ({', '.join(holders)}); recorded as confirmed by {args.by}.")
+        state["log"].append({"at": now(), "event": f"{stage['gate']} item {n} confirmed by {args.by}", "note": args.note or text,
+                             "confirm": {"gate": stage["gate"], "n": n, "text": text, "by": args.by}})
+        print(f"✓ {stage['gate']} item {n} confirmed by {args.by}: {text}")
+    save_state(root, state)
+    sys.path.insert(0, str(HERE))
+    import github_board  # noqa: E402  (beside this file)
+    github_board.after_approve(root, state, sys.modules[__name__])
 
 
 def main():
@@ -498,6 +754,11 @@ def main():
     p = sub.add_parser("approve"); p.add_argument("gate"); p.add_argument("--by", required=True); p.add_argument("--note"); p.add_argument("--override")
     p = sub.add_parser("skip"); p.add_argument("gate"); p.add_argument("check"); p.add_argument("--reason", required=True)
     p = sub.add_parser("set"); p.add_argument("key"); p.add_argument("value")
+    p.add_argument("--local", action="store_true", help="for this machine only (asf.local.json, git-ignored), e.g. a local site address")
+    p = sub.add_parser("team"); p.add_argument("action", nargs="?", choices=["list", "add", "remove"], default="list")
+    p.add_argument("role", nargs="?"); p.add_argument("name", nargs="?"); p.add_argument("--github", help="GitHub handle, so their issues are assigned to them")
+    p = sub.add_parser("confirm"); p.add_argument("gate"); p.add_argument("items", nargs="*", type=int, help="item numbers, as `asf check` lists them")
+    p.add_argument("--by"); p.add_argument("--note")
     p = sub.add_parser("report"); p.add_argument("--to"); p.add_argument("--from", dest="frm"); p.add_argument("--no-crawl", action="store_true"); p.add_argument("--force", action="store_true")
     p = sub.add_parser("campaign"); p.add_argument("action", choices=["new", "links", "check", "list", "report", "close"]); p.add_argument("slug", nargs="?")
     p.add_argument("--name"); p.add_argument("--landing"); p.add_argument("--start"); p.add_argument("--end")
@@ -505,10 +766,19 @@ def main():
     p.add_argument("--index", action="store_true", help="let search engines index the landing page (default: noindex)")
     p.add_argument("--content", help="creative names for utm_content, comma-separated"); p.add_argument("--url", help="check this site instead of the recorded one")
     p.add_argument("--write", action="store_true"); p.add_argument("--outcome", choices=["keep", "redirect", "unpublish"]); p.add_argument("--to"); p.add_argument("--note")
+    p = sub.add_parser("change"); p.add_argument("action", choices=["new", "list", "check", "status", "set", "confirm", "approve", "drop", "board", "pr"])
+    p.add_argument("rest", nargs="*", help="the change's slug, then a gate (C1–C4), item numbers, or a key and value")
+    p.add_argument("--title"); p.add_argument("--kind"); p.add_argument("--issue"); p.add_argument("--pages", help="the URLs it touches, comma-separated: /pricing/,/services/")
+    p.add_argument("--by"); p.add_argument("--note"); p.add_argument("--override"); p.add_argument("--reason")
+    p.add_argument("--offline", action="store_true", help="skip the checks that need the running site"); p.add_argument("--json", action="store_true")
+    p.add_argument("--all", action="store_true", help="for `list`: finished and dropped changes too"); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--base", help="for `pr`: the branch to compare with (default origin/main)")
     p = sub.add_parser("intake"); p.add_argument("action", choices=["sources", "add", "done", "list"]); p.add_argument("title", nargs="?")
     p.add_argument("files", nargs="*", help="for `done`: raw files to mark processed"); p.add_argument("--type"); p.add_argument("--source"); p.add_argument("--ref")
     p.add_argument("--quote"); p.add_argument("--body"); p.add_argument("--page"); p.add_argument("--stage"); p.add_argument("--note")
+    p.add_argument("--assign", help="a role (designer, developer…) or a GitHub handle; default: the role the type implies")
     p.add_argument("--local", action="store_true", help="file it in docs/intake/items/ even when GitHub is set up"); p.add_argument("--dry-run", action="store_true")
+    p.add_argument("--json", action="store_true", help="for `sources`: machine-readable, for /asf intake")
     p = sub.add_parser("github"); p.add_argument("action", choices=["init", "sync", "confirm-issues"])
     p.add_argument("--repo", help="owner/name (default: the repo of the current folder)"); p.add_argument("--owner", help="who owns the board (an org shares one board across clients)")
     p.add_argument("--project", type=int, help="use this existing project number instead of creating one"); p.add_argument("--dry-run", action="store_true")
@@ -518,7 +788,7 @@ def main():
         a.files = [a.title, *a.files]
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
      "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log,
-     "intake": cmd_intake, "github": cmd_github}[a.cmd](a)
+     "intake": cmd_intake, "github": cmd_github, "team": cmd_team, "confirm": cmd_confirm, "change": cmd_change}[a.cmd](a)
 
 
 if __name__ == "__main__":

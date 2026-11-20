@@ -26,19 +26,25 @@ In ASF the website is the artifact and the weekly measurement is the service: St
 | **2 Story** | Positioning, messaging (stakes hero, who-we-are line, contrast, echo, price anchor), IA, page recipes | **G2:** the client approves the message and agrees it defines *their* business; ≤ 8 sections per page; one idea per page | [`stages/2-story.md`](stages/2-story.md) |
 | **3 System** | Three design directions previewed on the real pages and reviewed in Figma, design tokens, components, page copy, the working build (theme + plugin + seed), AI-search layer, lead capture, analytics events | **G3:** design review passes the anti-"AI look" list; copy passes lint; the build seeds with one command | [`stages/3-system.md`](stages/3-system.md) |
 | **4 Ship** | Automated QA report, launch readiness scan (security, performance, accessibility, launch settings, Lighthouse), editor validation, form end-to-end test, launch checklist, handoff docs | **G4:** all checks green; zero `[CONFIRM]` chips; backups, monitoring and 2FA confirmed; client sign-off | [`stages/4-ship.md`](stages/4-ship.md) |
-| **5 Run** | Weekly report (with a rescan of the live site), campaigns (landing page, tagged links, results), monthly improvement proposal | **G5 (every week):** production scan clean; live campaigns checked; report sent, whether the client asked or not | [`stages/5-run.md`](stages/5-run.md) |
+| **5 Run** | Weekly report (with a rescan of the live site), changes (each with its own gates C1–C4), campaigns (landing page, tagged links, results), monthly improvement proposal | **G5 (every week):** production scan clean; live campaigns checked; no change stuck; report sent, whether the client asked or not | [`stages/5-run.md`](stages/5-run.md) |
 
 ## Roles
 
 | Role | Who | Owns |
 |---|---|---|
-| **Lead** | A human (PM or strategist) | Every gate, client conversations, final say on message and design |
+| **Lead** | A human (PM, strategist or account owner) | Signs every gate, client conversations, final say on message and design |
 | **Orchestrator** | The main Claude Code session | Running stages, briefing specialists, integrating their work, running QA |
 | **Researcher** | Subagent ([`agents/site-researcher.md`](agents/site-researcher.md)) | Stage 1: audits, internal notes, reference teardowns |
 | **Strategist** | Subagent ([`agents/site-strategist.md`](agents/site-strategist.md)) | Stage 2: positioning, messaging, IA |
 | **Writers** | Parallel subagents or forks ([`agents/site-copywriter.md`](agents/site-copywriter.md)) | Stage 3: page copy, one page family each |
 | **QA** | Subagent ([`agents/site-qa.md`](agents/site-qa.md)) + [`qa/`](qa/) scripts | Stage 4: automated checks and review |
-| **Designer** | A human, who reviews and doesn't push pixels | G3 design review |
+| **Designer** | A human, who reviews and doesn't push pixels | G3 design review: confirms the design items before the lead signs |
+| **Developer** | A human | Theme and plugin review, deployment, hosting, backups and access (their G4 items) |
+| **Content** | A human | The words: reviews page copy, owns "one idea, one home" |
+| **QA** | A human, alongside the QA subagent | The checks no script can do (their G4 items) |
+| **Client** | The client's own approver | Confirms facts, chooses the message and the design, signs off staging |
+
+One person can hold several roles, and a solo lead holds them all. Name the people with `bin/asf team add <role> "Name"`; from then on each person confirms their own gate items (`bin/asf confirm`), and requests are assigned to whoever acts on them. See [`orchestrator/README.md`](orchestrator/README.md) § Working as a team.
 
 ## Get it
 
@@ -72,7 +78,8 @@ Then open the new project folder in Claude Code and run **`/asf`**. The [orchest
 
 - `/asf run`: does the current stage's work up to its gate, briefing the stage's agents with its prompts and asking you for anything only the client can provide
 - `/asf approve G1`: records a gate sign-off after the lead confirms the manual items
-- `/asf intake`: turns requests from email, calls, GitHub issues, chat and documents into one tracked item each, with its source
+- `/asf intake`: turns requests from email, calls, GitHub issues, chat and documents into one tracked item each, with its source and an owner. With a team, it first copies new material from the shared drive folder
+- `/asf change new …`: after launch, every new page, restyle, copy edit or fix is a change with its own gates (C1 Brief → C2 Design → C3 Build → C4 Release), one issue and one pull request
 - `/asf board`: sets up and syncs the project manager's view on GitHub (a Projects board with a Stage field, milestones G1–G5, a gate tracker issue)
 - `bin/asf status` / `bin/asf next`: the same from a terminal
 

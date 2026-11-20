@@ -214,6 +214,8 @@ def collect(root, state, to=None, frm=None, crawl=True):
     if state.get("campaigns"):
         import campaigns  # noqa: E402  (beside this file)
         camps = campaigns.weekly(state, rng, wp["data"]["leads"] if wp.get("status") == "ok" else None)
+    import changes as change_log  # noqa: E402  (beside this file)
+    chg = change_log.weekly(root, state, rng)
     if before:
         seen = {f["message"] for g in before["groups"].values() for f in g["findings"]}
         launch["new_since_last_week"] = [f"{name}: {f['message']}" for name, g in launch["groups"].items()
@@ -225,6 +227,7 @@ def collect(root, state, to=None, frm=None, crawl=True):
         "sources": {
             "wordpress": wp,
             "campaigns": {"status": "ok" if camps else "none running", "rows": camps},
+            "changes": {"status": "ok" if any(chg.values()) else "none", **chg},
             "health": health,
             "ga4": src_ga4(rng),
             "search_console": src_search_console(rng),
@@ -295,6 +298,20 @@ def draft(data):
             to_date = "–" if r["to_date"] is None else f"{r['to_date']}" + (f" of {r['goal']}" if r.get("goal") else "")
             lines.append(f"| {r['name']} (`{r['campaign']}`) | {r['status']} | {'–' if r['this_week'] is None else r['this_week']} | {to_date} | {r['pace']} | "
                          f"{'–' if r['cost_per_lead'] is None else r['cost_per_lead']} | {r['best_creative'] or '–'} |")
+    chg = s.get("changes") or {}
+    if chg.get("shipped") or chg.get("open") or chg.get("follow_up"):
+        lines += ["", "## Changes"]
+        if chg.get("shipped"):
+            lines += ["**Shipped this week**", "", "| Change | Kind | Pages | What it should move |", "|---|---|---|---|"]
+            lines += [f"| {r['title']} (`{r['change']}`) | {r['kind']} | {r['pages']} | {r['should_move'] or '–'} |" for r in chg["shipped"]]
+        if chg.get("follow_up"):
+            lines += ["", "**Due a look** (released a few weeks ago: did it move what its brief said?)", "",
+                      "| Change | Released | What it should move | What happened |", "|---|---|---|---|"]
+            lines += [f"| {r['title']} (`{r['change']}`) | {r['released']} | {r['should_move'] or '–'} | [the number now, with its source; then `bin/asf change set {r['change']} result …`] |"
+                      for r in chg["follow_up"]]
+        if chg.get("open"):
+            lines += ["", "**In progress**", "", "| Change | Kind | Gate | Days open |", "|---|---|---|---|"]
+            lines += [f"| {r['title']} (`{r['change']}`) | {r['kind']} | {r['gate']} | {r['days_open']} |" for r in chg["open"]]
     sc = s["search_console"]
     lines += ["", "## Search"]
     if sc.get("status") == "ok":

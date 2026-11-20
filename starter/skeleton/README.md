@@ -16,7 +16,7 @@ bin/serve.sh
 ```
 
 - Site: **http://localhost:8088** · Admin: `/wp-admin` (the local login is printed by `setup.sh`; local only).
-- **Laravel Valet** (optional): `ln -sfn "$PWD/wordpress" ~/.config/valet/Sites/__SLUG__` gives you **http://__SLUG__.test**.
+- **Laravel Valet** (optional): `ln -sfn "$PWD/wordpress" ~/.config/valet/Sites/__SLUG__` gives you **http://__SLUG__.test**; then `bin/asf set --local site_url http://__SLUG__.test` (this machine only, so teammates keep their own address).
 - After editing `content/`: `bin/setup.sh --reseed`. To start from zero: `bin/setup.sh --fresh`.
 
 ## Where things are

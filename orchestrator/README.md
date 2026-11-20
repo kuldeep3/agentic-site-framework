@@ -14,10 +14,14 @@ Runs one client project from requirements to deployment and measurement: it know
 | `workflow.json` | The framework as data: five stages, each with its playbook, agents, prompts, **automated checks** (with a fix hint each) and **manual items** a person must confirm |
 | `asf.py` | The command-line tool (`bin/asf` in each project). Standard-library Python |
 | `claude-command.md` | The `/asf` command for Claude Code, installed as `.claude/commands/asf.md` |
+| `changes.py` | After launch (`bin/asf change`): every piece of work is a change with its own gates C1–C4, by kind |
 | `intake.py` | Requirements intake (`bin/asf intake`): every request from any channel becomes one tracked item with its source |
 | `github_board.py` | The project manager's view (`bin/asf github`): labels, gate milestones, a Projects board and a gate tracker issue |
 | `board-sync.yml` | Optional GitHub Action that keeps the gate tracker in step; copy to `.github/workflows/` in the project |
-| `asf.json` (in each project) | The project's state and audit trail: stage, sign-offs (who, when, what they confirmed), skips with reasons, deploy URLs, analytics. Commit it |
+| `asf.json` (in each project) | The project's state: stage, team, sign-offs (who, when, what they confirmed), skips with reasons, deploy URLs, analytics. Commit it |
+| `docs/log/*.jsonl` (in each project) | The audit trail: every sign-off, confirmation, setting and intake step, with who ran it. One append-only file per person, so two branches never conflict. Commit it |
+| `asf.local.json` (in each project) | Settings for one machine only (`bin/asf set --local site_url …`). Git-ignored |
+| `pr-checks.yml` | Optional GitHub Action: content lint and a state check on every pull request; copy to `.github/workflows/` in the project |
 
 ## Use it
 In Claude Code, inside a project made by the starter:
@@ -40,7 +44,7 @@ bin/asf next
 bin/asf approve G1 --by "Jane Lead" --note "Kickoff signed by the founder"
 ```
 
-Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no current site"`, `bin/asf set deploy.staging_url https://…`, `bin/asf intake …` and `bin/asf github …` (below), `bin/asf campaign …` (below), `bin/asf log`.
+Other commands: `bin/asf team` and `bin/asf confirm G3 2 --by "Name"` (below), `bin/asf set --local site_url http://acme.test`, `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no current site"`, `bin/asf set deploy.staging_url https://…`, `bin/asf intake …` and `bin/asf github …` (below), `bin/asf campaign …` (below), `bin/asf log`.
 
 ## Gates
 | Gate | Checked automatically | Confirmed by a person |
@@ -49,12 +53,53 @@ Other commands: `bin/asf check [G2]`, `bin/asf skip G1 audit --reason "no curren
 | **G2 Story** | Strategy and IA filled; the client's own words choosing the message recorded; ≥ 3 briefs; every brief ≤ 8 sections | Route chosen as "defines our business"; competitor test; one idea, one home |
 | **G3 System** | Client facts filled; design brief and three directions written; directions shared for review (`design.figma_url`) and the choice recorded (`design.direction`); the client's own design layer in place (not `ASF:UNBRANDED`); every page the IA plans exists and no unplanned skeleton page is left; content lint clean | Review-file comments resolved or filed; anti-AI-look review; not a re-skin; client approved pages in the browser |
 | **G4 Ship** | Nothing the client sent left unread; strict lint (no `[CONFIRM]` left in pages, front matter or theme templates); strict crawl (none on any live page, title or meta description); staging URL recorded; `launch.py`: accessibility (local), then security, performance and launch settings on staging; Lighthouse 90+ (public staging) | Responsive, contrast and keyboard, editor, form and email end to end, backups with a tested restore, uptime monitoring, admins on 2FA, written sign-off |
-| **G5 Run** (weekly) | Production URL recorded; production scan (security, launch settings) clean; live campaigns pass their checks and finished ones are closed; the analytics ID recorded is on the live home page; a report in the last 7 days | Report sent; one concrete action |
+| **G5 Run** (weekly) | Production URL recorded; production scan (security, launch settings) clean; live campaigns pass their checks and finished ones are closed; no change is stuck; the analytics ID recorded is on the live home page; a report in the last 7 days | Report sent; one concrete action |
 
-`approve` is refused while automated checks fail. `--override "reason"` exists for real exceptions, and the reason is kept in the log.
+`approve` is refused while automated checks fail, or while an item that belongs to someone else on the team waits for their confirmation. `--override "reason"` exists for real exceptions, and the reason is kept in the log.
+
+## Working as a team
+One person with Claude Code can run a whole project. With a designer, developers, a content owner, QA and the client's approver, four things keep everyone in step:
+
+| | How |
+|---|---|
+| **Who does what** | `bin/asf team add designer "Name" --github handle`. Roles (in `workflow.json` → `roles`): lead, designer, developer, content, qa, client. One person can hold several; a role can have several people |
+| **Each function confirms its own items** | Every manual gate item has an owner role (`workflow.json`: `{"text": …, "role": "qa"}`; a plain string belongs to the gate's signer). The owner runs `bin/asf confirm G4 1 2 --by "Name"`; the lead then signs with `approve`. Once a role has a person, `approve` waits for them. The gate tracker issue shows who owns and who has confirmed each item |
+| **Every request has an owner** | `bin/asf intake add` labels each issue with the role that acts on it (`role:designer`, `role:client`…) and assigns it to whoever holds the role, so each function filters the board to its own queue |
+| **No shared file to fight over** | `asf.json` holds only settings and sign-offs. The log is one file per person in `docs/log/`, and each person's local site address is in their own `asf.local.json`. Two people on two branches merge without conflicts |
+
+`bin/asf log` shows who ran what. The name comes from `ASF_USER`, or `git config user.name`.
+
+Every pull request gets the same checklist (`.github/pull_request_template.md`: the request it closes, the change it carries, what was checked, who needs to look), and `pr-checks.yml` runs the content lint on it. After launch it also refuses a pull request that changes the site without a change signed up to Build (below).
+
+## Changes: gates for one piece of work (after launch)
+G1–G5 take the site to launch once. After that, a new page, a restyle, a copy edit or a fix is a **change**: one issue, one branch, one pull request, and a short run of the same stages.
+
+| Gate | Question | Checked automatically | Confirmed by a person | Signs |
+|---|---|---|---|---|
+| **C1 Brief** | What are we changing, and why? | Issue linked; pages named; "What and why" and "What it should move" written; sections planned, 8 at most (new pages) | The request is the client's own; new facts are sourced or `[CONFIRM]` (content); strategy and IA updated (rework) | Lead |
+| **C2 Design** | How does it look? | Shared for review (Figma link) | Reviewed at 1440 and 375, comments resolved or filed; the site's own tokens, no AI look | Designer |
+| **C3 Build** | Is it right? | Content lint; no `[CONFIRM]` in its pages; its pages load and pass the accessibility and performance scan; pull request recorded | Four widths; editor, forms and links; reads right as the buyer (content); code reviewed (developer) | QA |
+| **C4 Release** | Is it live, and safe? | Release date recorded; its pages live and clean on production | Checked on production (developer); client signed off staging (page, design, rework); issue closed | Lead |
+
+The kind decides which gates apply (`workflow.json` → `change.kinds`): `fix` C3–C4 · `content` C1, C3, C4 · `design` C2–C4 · `page` and `rework` all four.
+
+| Command | What it does |
+|---|---|
+| `bin/asf change new <slug> --title "…" --kind … [--issue 12] [--pages /pricing/]` | Writes the brief, `docs/changes/<slug>.md`, and puts the issue's card on the board |
+| `bin/asf change list [--all]` | Every open change: its gate, who it waits on, days open |
+| `bin/asf change check <slug> [C3] [--offline] [--json]` | The gate's checks and the items people confirm. `--offline` skips what needs the running site |
+| `bin/asf change set <slug> issue\|pages\|figma\|pr\|staging\|released\|result\|review_after <value>` | Records a link, a date or the result |
+| `bin/asf change confirm <slug> C3 1 2 --by "Name"` | One person confirms the items they own |
+| `bin/asf change approve <slug> C3 --by "Name" [--override "reason"]` | The gate's signer signs it; refused while checks fail or another owner hasn't confirmed |
+| `bin/asf change drop <slug> --reason "…"` · `bin/asf change board <slug>` | Drops it · puts its issue where it stands on the board (also done on `new` and `approve`) |
+| `bin/asf change pr [--base origin/main]` | For CI (`pr-checks.yml`): fails when a pull request touches `content/` or `wp-content/` without a change signed up to Build. Before launch it passes |
+
+How it stays out of the way of a team: a change is one file, and its confirmations and sign-offs are lines in each person's own log, so parallel changes never conflict and the record travels with the pull request. Merge after C3; release (C4) follows the merge, so staging always matches `main`. The issue's Stage on the board follows the change's gate (Requirement → Design → Testing → Launch → Done) and its `role:*` label follows whoever signs next.
+
+Two things tie a change back to the weekly gate. G5 fails while a change is stuck (idle for 14 days, or built and unreleased for 7). And the weekly report lists what shipped, what's in progress, and, 28 days after release (`review_after`), each change that's "due a look": whether it moved the number its brief named. `bin/asf change set <slug> result "…"` records the answer.
 
 ## Check types (for editing `workflow.json`)
-`file_exists` · `no_placeholders` (no unfilled `[template brackets]`; links, checkboxes and `[CONFIRM]` don't count) · `section_filled` (a heading's section has real text) · `table_rows` (min filled rows under a heading) · `media_mapped` (every file in `content/media/` named in the truth file) · `glob_min` · `briefs_max_sections` · `not_contains` · `command` (exit code 0; `{site_url}`, `{deploy.staging_url}` or any other `asf.json` value in braces is filled in, and the check fails with "needs `asf set …`" while it's empty) · `state_set` (a value set with `asf set`) · `recent_file` (newest match within N days) · `ia_pages` (the IA's sitemap against `content/pages/`, both ways) · `analytics_live` (the GA4/GTM ID in `measurement.analytics` appears on the live home page) · `campaigns` (every live campaign passes `asf campaign check`; none left open a week after it ends) · `intake_clear` (every file in `docs/intake/raw/` processed with `asf intake done`).
+`file_exists` · `no_placeholders` (no unfilled `[template brackets]`; links, checkboxes and `[CONFIRM]` don't count) · `section_filled` (a heading's section has real text) · `table_rows` (min filled rows under a heading) · `media_mapped` (every file in `content/media/` named in the truth file) · `glob_min` · `briefs_max_sections` · `not_contains` · `command` (exit code 0; `{site_url}`, `{deploy.staging_url}` or any other `asf.json` value in braces is filled in, and the check fails with "needs `asf set …`" while it's empty) · `state_set` (a value set with `asf set`) · `recent_file` (newest match within N days) · `ia_pages` (the IA's sitemap against `content/pages/`, both ways) · `analytics_live` (the GA4/GTM ID in `measurement.analytics` appears on the live home page) · `campaigns` (every live campaign passes `asf campaign check`; none left open a week after it ends) · `intake_clear` (every file in `docs/intake/raw/` processed with `asf intake done`) · `changes` (no open change idle for `stale_days`, none signed at Build and unreleased for `release_days`). Change gates add `front_set` (a value recorded with `asf change set`), `change_pages` (no `[CONFIRM]` in the change's pages) and `change_urls` (its pages load and pass the accessibility and performance scan, on staging or production).
 
 ## Design review (stage 3)
 Clients can't choose between directions described in a document, so each direction is shown on the real pages and reviewed where everyone can comment (playbook: `stages/3-system.md` §3.2a; prompts: `prompts/07-design-direction.md` A, C, D).
@@ -74,28 +119,36 @@ Requirements arrive by email, on calls, in GitHub issues, in chat and in documen
 
 | Command | What it does |
 |---|---|
-| `/asf intake` (Claude Code) | Reads what's new: `docs/intake/raw/`, a connected inbox (`intake.email_query`), meeting transcripts, unlabelled or form-filed issues, Figma comments. Drafts one item per request with the client's words and an exact reference, and files the ones the lead approves |
-| `bin/asf intake sources` | Raw files in `docs/intake/raw/` (git-ignored: client correspondence stays private) and which are processed |
-| `bin/asf intake add "Title" --type … --source … --ref "…" [--quote "…"] [--page /…/] [--stage …] [--local] [--dry-run]` | Files one item. Types: fact, question, content, page, design, bug, campaign. Sources: email, call, meeting, issue, chat, doc, figma, other |
-| `bin/asf intake done <file> …` | Marks raw files processed (G1 and G4 check that none are left) |
+| `/asf intake` (Claude Code) | Copies new files from the team's shared folder (`intake.drive_folder`) into `docs/intake/raw/`, then reads what's new: `docs/intake/raw/`, a connected inbox (`intake.email_query`), meeting transcripts, unlabelled or form-filed issues, Figma comments. Drafts one item per request with the client's words and an exact reference, and files the ones the lead approves |
+| `bin/asf intake sources [--json]` | Raw files in `docs/intake/raw/` (git-ignored: client correspondence stays private), which are processed, and which a teammate processed on another machine |
+| `bin/asf intake add "Title" --type … --source … --ref "…" [--quote "…"] [--page /…/] [--stage …] [--assign role\|handle] [--local] [--dry-run]` | Files one item, labelled with the role that acts on it and assigned to whoever holds it. Types: fact, question, content, page, design, bug, campaign. Sources: email, call, meeting, issue, chat, doc, figma, other |
+| `bin/asf intake done <file> …` | Marks raw files processed, by their contents, in the log (G1 and G4 check that none are left) |
 | `bin/asf intake list` | Open items |
 
 Clients and the team can also file directly with the issue forms every project gets in `.github/ISSUE_TEMPLATE/` (client request, design feedback, bug); `/asf intake` adds their `type:*` label and Stage.
 
+**With more than one person,** `docs/intake/raw/` isn't enough: it's git-ignored, so it exists on one machine. The client's folder on the team's shared drive is the inbox instead:
+- Everyone drops transcripts, forwarded emails, chat exports and documents in its `intake/` folder, named date first. `bin/asf set intake.drive_folder <link>` records it once.
+- `/asf intake` copies what's new into `raw/` through a file-storage connector (read-only: it never changes the drive), then reads as usual. Without a connector, copy the files by hand.
+- What's processed is recorded in the log by each file's contents, and the log is committed. Once it's pushed, the same file shows as done on every machine, whoever runs intake next, so nothing is filed twice.
+- The "nothing left unread" check at G1 and G4 sees the `raw/` folder of the machine it runs on: run `/asf intake` (which syncs first) on that machine before signing.
+- A single request needs no file at all: anyone can file the "Client request" issue form with the client's words and where they said it.
+
 **After a client call** (the steps are in each project's `docs/intake/README.md`):
 - The recording goes to the team's shared drive, never into the repo. `.gitignore` also blocks audio and video files anywhere under `docs/`.
-- The timestamped transcript goes in `docs/intake/raw/`, named date first (`2026-11-17-call-admissions.vtt`). Its first two lines give the recording link and who was on the call.
+- The timestamped transcript goes in `docs/intake/raw/` (with a team: in the shared folder, beside the recording), named date first (`2026-11-17-call-admissions.vtt`). Its first two lines give the recording link and who was on the call.
 - `/asf intake` then files one item per request, quoting the client with a reference like "Call 2026-11-17, recording 14:32, <link>".
 - `bin/asf intake sources` flags an audio or video file left in `raw/`: intake reads text, so it needs a transcript first.
 
 ## Project board on GitHub (all stages)
-The project manager's view: which request, page and fix is where. **`asf.json` stays the record of sign-offs; GitHub mirrors it one way**, so there's never a second source of truth to reconcile.
+The project manager's view: which request, page and fix is where. **`asf.json` and the log stay the record of sign-offs; GitHub mirrors them one way**, so there's never a second source of truth to reconcile.
 
 | What | Where it comes from |
 |---|---|
+| **Labels** `type:*`, `source:*` and `role:*` (who acts next: lead, designer, developer, content, qa, client) | `init`. Group or filter the board by `role:*` for each function's queue |
 | **Projects board** with a **Stage** field: Inbox → Requirement → Story → Design → Development → Testing → Launch → Live → Done | `bin/asf github init`. Intake items land in the Stage their type implies (fact → Requirement, design → Design, bug → Testing…). A board shared across clients (`--owner org --project N`) also gets a **Client** field |
 | **Milestones G1–G5**, one per gate | `init`; `sync` closes a gate's milestone when it's signed |
-| **Gate tracker** issue (pinned) | `sync` rewrites it (every gate's status, the current gate's automated checks as checkboxes, the manual items, sign-offs and links) and moves its card to the current stage. `asf approve` runs `sync` too |
+| **Gate tracker** issue (pinned) | `sync` rewrites it (every gate's status, the current gate's automated checks as checkboxes, the manual items with their owners and confirmations, the team, sign-offs and links) and moves its card to the current stage. `asf approve`, `asf confirm` and `asf team` run `sync` too |
 | **"Facts to confirm" issues**, one per page | `bin/asf github confirm-issues`, once the pages are written (stage 3): every `[CONFIRM]` chip as a checkbox, on milestone G4. Pages that already have an open issue are skipped |
 | Pull requests | Link them to issues (`Closes #12`); the board shows what's in review |
 

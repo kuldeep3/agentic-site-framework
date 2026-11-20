@@ -1,0 +1,3 @@
+# The project log (docs/log/) is one append-only file per person. If the same person works on two
+# branches, keep both sides' lines instead of raising a conflict.
+/docs/log/*.jsonl merge=union

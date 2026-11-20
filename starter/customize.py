@@ -12,6 +12,7 @@ import json
 import re
 import shutil
 import struct
+import subprocess
 import sys
 import zlib
 from pathlib import Path
@@ -19,6 +20,15 @@ from pathlib import Path
 TEXT = {".php", ".js", ".json", ".css", ".html", ".sh", ".md", ".txt", ".xml", ".gitignore", ""}
 
 SRC_THEME, SRC_PLUGIN, SRC_NAME = "asfbase", "asfbase-core", "ASF Base"
+
+
+def framework_version(fw):
+    """The framework's commit and date, or "" when it isn't a git checkout."""
+    try:
+        r = subprocess.run(["git", "-C", str(fw), "log", "-1", "--format=%h %cs"], capture_output=True, text=True, timeout=10)
+        return r.stdout.strip() if r.returncode == 0 else ""
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
 
 
 def leftover_patterns(fw):
@@ -144,13 +154,18 @@ def reset_client_files(t, a, fw, ref):
     (docs / "intake/README.md").write_text(
         "# Intake\n\nEvery client request, from any channel, becomes one tracked item with its source "
         "(see `framework/orchestrator/README.md` § Requirements intake).\n\n"
-        "- `raw/`: drop emails (.eml, .md, .txt), call and meeting transcripts and notes here. **Git-ignored**: client correspondence stays private.\n"
+        "- `raw/`: drop emails (.eml, .md, .txt), call and meeting transcripts and notes here. **Git-ignored**: client correspondence stays private, "
+        "and the folder is on your machine only.\n"
+        "- **Working as a team:** the client's folder on the shared drive is the inbox. Everyone drops material in its `intake/` folder, named date first; "
+        "record the folder once with `bin/asf set intake.drive_folder <link>`. `/asf intake` copies what's new from it into `raw/` before reading, "
+        "and never changes anything on the drive. What's been processed is recorded in the project log by the file's contents, "
+        "so a transcript one person filed shows as done for everyone (`bin/asf intake sources`).\n"
         "- `/asf intake` reads what's new (and connected inboxes, transcripts, issues and Figma comments), drafts one item per request, and files the ones the lead approves: "
         "a GitHub issue when `bin/asf github init` has run, otherwise a file in `items/`.\n"
         "- `bin/asf intake sources` shows what's still unread. Gates G1 and G4 check that nothing is.\n\n"
         "## After a client call\n\n"
         "1. **The recording goes to the team's shared drive**, in this client's folder. Never into the repo: it's large, it carries the client's voice, and git keeps it forever.\n"
-        "2. **The transcript goes in `raw/`**, exported from the meeting tool with timestamps (`.vtt`, `.srt`, or a timestamped `.txt` or `.md`). "
+        "2. **The transcript goes in `raw/`** (or, with a team, in the shared folder beside the recording), exported from the meeting tool with timestamps (`.vtt`, `.srt`, or a timestamped `.txt` or `.md`). "
         "Name it date first, so the folder reads in order: `raw/2026-11-17-call-admissions.vtt`.\n"
         "3. **Start the transcript with two lines** saying where the recording is and who was on the call, so every item can point back to the minute it was said:\n"
         "   ```\n"
@@ -192,9 +207,14 @@ def reset_client_files(t, a, fw, ref):
         "region": a.region, "currency": a.currency, "timezone": a.timezone,
         "rest_namespace": f"{a.slug}/v1",
         "created": datetime.datetime.now().astimezone().isoformat(timespec="minutes"), "stage": "truth",
-        "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "log": [],
+        "gates": {}, "skips": {}, "deploy": {}, "measurement": {}, "team": {},
+        # Which framework this project was made from, so a team running several sites can see which are behind.
+        "framework_version": framework_version(fw),
     }
     (t / "asf.json").write_text(json.dumps(state, indent=2, ensure_ascii=False) + "\n")
+    # The audit trail: one append-only file per person (bin/asf writes them), so branches never conflict.
+    (docs / "log").mkdir(parents=True, exist_ok=True)
+    (docs / "log/.gitkeep").write_text("")
 
     # Project README and CLAUDE.md.
     theme_slug = a.slug.replace("-", "")

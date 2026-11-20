@@ -38,6 +38,10 @@ STAGE_HELP = {
 TYPE_STAGE = {"fact": "Requirement", "question": "Requirement", "content": "Development", "page": "Development",
               "design": "Design", "bug": "Testing", "campaign": "Live"}
 GATE_STAGE = {"truth": "Requirement", "story": "Story", "system": "Development", "ship": "Launch", "run": "Live"}
+# Who acts on a request of each type, so every function can filter the board to its own queue (label role:*).
+ROLES = ["lead", "designer", "developer", "content", "qa", "client"]
+TYPE_ROLE = {"fact": "client", "question": "client", "content": "content", "page": "developer",
+             "design": "designer", "bug": "developer", "campaign": "lead"}
 
 LABELS = [("intake", "ededed", "Came in through /asf intake or an issue form")]
 LABELS += [(f"type:{t}", c, d) for t, c, d in [
@@ -50,6 +54,8 @@ LABELS += [(f"type:{t}", c, d) for t, c, d in [
     ("campaign", "0e8a16", "Campaign work (stage 5)"),
 ]]
 LABELS += [(f"source:{s}", "c5def5", f"Arrived by {s}") for s in ("email", "call", "meeting", "issue", "chat", "doc", "figma", "other")]
+LABELS += [(f"role:{r}", "bfdadc", f"Next step is with {who}") for r, who in zip(ROLES, (
+    "the lead", "the designer", "a developer", "the content owner", "QA", "the client"))]
 
 
 class GhError(RuntimeError):
@@ -191,7 +197,12 @@ def tracker_body(root, state, core):
         box = "x" if r["status"] != "fail" else " "
         extra = f" ({r['detail']})" if r["detail"] and r["status"] == "fail" else (" (skipped: " + r["detail"] + ")" if r["status"] == "skipped" else "")
         lines.append(f"- [{box}] {r['label']}{extra}")
-    lines += ["", "**For a person to confirm at sign-off**", ""] + [f"- [ ] {m}" for m in cur["manual"]]
+    lines += ["", f"**For a person to confirm** (`bin/asf confirm {cur['gate']} <number> --by \"Name\"`), before the {cur['signs']} signs", ""]
+    lines += ["- " + core.manual_line(i) for i in core.manual_items(state, cur)]
+    team = [f"- {role}: " + ", ".join(p["name"] + (f" (@{p['github']})" if p.get("github") else "") for p in core.people(state, role))
+            for role in wf.get("roles", {}) if core.people(state, role)]
+    if team:
+        lines += ["", "## Team", ""] + team
     signed = [(s, state["gates"].get(s["gate"])) for s in wf["stages"] if state["gates"].get(s["gate"])]
     if signed:
         lines += ["", "## Sign-offs", ""]
@@ -231,7 +242,7 @@ def sync(root, state, args, core, quiet=False):
 
 
 def after_approve(root, state, core):
-    """Called by `asf approve`: mirror the sign-off on GitHub. Never fails the approval."""
+    """Called by `asf approve`, `asf confirm` and `asf team`: mirror the change on GitHub. Never fails the command."""
     if not configured(state):
         return
     try:

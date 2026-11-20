@@ -31,6 +31,16 @@ A campaign gets one landing page, one offer, tagged links and a result: [`patter
 4. While it runs: the weekly report's Campaigns table, `bin/asf campaign report <slug>` for detail, spend recorded with `bin/asf set campaigns.<slug>.spend …`.
 5. When it ends: `bin/asf campaign close <slug> --outcome keep|redirect|unpublish`, and write "What we learned" in the results file.
 
+## Changes (every new page, restyle, copy edit and fix)
+After launch nothing reaches the site outside a change: one issue, one branch, one pull request, and the gates its kind needs. See [`orchestrator/README.md`](../orchestrator/README.md) § Changes.
+
+1. The request is an issue (`/asf intake`). On a new branch: `bin/asf change new <slug> --title "…" --kind fix|content|page|design|rework --issue <n> --pages /…/`.
+2. `/asf change run <slug>` works the current gate; `bin/asf change check <slug>` shows what it still needs and who confirms what.
+3. **C1 Brief** (the lead signs) → **C2 Design** (the designer signs, in the Figma review file) → **C3 Build** (QA signs) → merge → **C4 Release** (the lead signs, once it's live and checked on production). A fix skips C1 and C2; a copy edit skips C2.
+4. The weekly report lists what shipped and what's in progress. Four weeks after release it asks what the change moved: record it with `bin/asf change set <slug> result "…"`.
+
+A new service line, a rebrand or a new site structure is a `rework`: `docs/01-strategy.md` and `docs/02-information-architecture.md` change first, and the client agrees to them, before any page does.
+
 ## Monthly
 - **One improvement proposal**, sized and priced: a new case study, a landing page for a query that's gaining, a page test, a new offer page. This is how the engagement grows.
 - Content: one case study or one answer-first article mapped to an ICP query.
@@ -45,6 +55,7 @@ A campaign gets one landing page, one offer, tagged links and a result: [`patter
 ## Gate G5 (every week)
 - [ ] Production scan clean (`launch.py --env production --only security,launch`; checked by `bin/asf check G5`)
 - [ ] Every live campaign passes `bin/asf campaign check`; finished ones are closed
+- [ ] No change is stuck (`bin/asf change list`): none idle for two weeks, none built and unreleased for a week
 - [ ] Report sent on the agreed day
 - [ ] Every number in it has a source (an analytics view, a lead record or a screenshot)
 - [ ] One concrete action for the coming week

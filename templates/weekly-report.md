@@ -26,6 +26,13 @@
 |---|---|---|---|---|---|
 | [slug] | | | | | |
 
+## Changes
+*What shipped, what's in progress, and what's due a look (`bin/asf change list`). A change released a few weeks ago gets one line on what it moved.*
+
+| Change | Released | What it should move | What happened |
+|---|---|---|---|
+| [slug] | | | |
+
 ## Search
 - Top queries gaining: [query, position change]
 - New pages indexed / issues: [from Search Console]

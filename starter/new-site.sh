@@ -72,7 +72,7 @@ cat <<EOF
 Next:
   1. cd "$TARGET" && bin/setup.sh            # WordPress on SQLite, seeded with the skeleton pages
   2. bin/serve.sh  →  http://localhost:8088
-     On Laravel Valet instead: ln -sfn "\$PWD/wordpress" ~/.config/valet/Sites/$SLUG && bin/asf set site_url http://$SLUG.test
+     On Laravel Valet instead: ln -sfn "\$PWD/wordpress" ~/.config/valet/Sites/$SLUG && bin/asf set --local site_url http://$SLUG.test
   3. Open the folder in Claude Code and run /asf: it shows the stage, the gate and what to do next.
 
 Theme: wp-content/themes/$THEME · Plugin: wp-content/plugins/$SLUG-core · Facts: plugin inc/entity.php

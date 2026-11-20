@@ -3,6 +3,9 @@
 .DS_Store
 *.log
 
+# Settings for this machine only (`bin/asf set --local site_url …`): each person's local site address differs.
+/asf.local.json
+
 # Raw client material for /asf intake (emails, call transcripts, notes): private, never committed.
 # The folder itself is kept (.gitkeep) so every clone has it.
 /docs/intake/raw/*

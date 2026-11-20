@@ -3,12 +3,13 @@
 This project is built with the **Agentic Site Framework** (`docs/framework/`). Read `docs/framework/README.md` and `docs/framework/PRINCIPLES.md` before doing anything else.
 
 ## Start here
-Run **`/asf`**: it shows where the project is (stage and gate), what the gate still needs, and what to do next. `/asf run` works the current stage up to its gate; `/asf approve G1` records a sign-off after the lead confirms. After launch, `/asf report` is the weekly report and `/asf campaign new …` starts a campaign (one landing page, tagged links, results). State lives in `asf.json` (via `bin/asf`); never edit it by hand.
+Run **`/asf`**: it shows where the project is (stage and gate), what the gate still needs, and what to do next. `/asf run` works the current stage up to its gate; `/asf approve G1` records a sign-off after the lead confirms. After launch, every new page, restyle, copy edit or fix is a change with its own gates (`/asf change new …`, then `/asf change run <slug>`); `/asf report` is the weekly report and `/asf campaign new …` starts a campaign (one landing page, tagged links, results). State lives in `asf.json` and the log in `docs/log/` (both via `bin/asf`); never edit them by hand.
 
 ## How work runs here
 - Work goes stage by stage: Truth → Story → System → Ship → Run (`docs/framework/stages/`). **Stop at each gate** and ask the lead to sign it off. Don't start a stage whose inputs don't exist yet (no copy before `docs/truth.md`; no build before `docs/01-strategy.md` is approved).
 - Specialist subagents are in `.claude/agents/`: `site-researcher` (stage 1), `site-strategist` (stage 2), `site-copywriter` (stage 3, one per page family, in parallel), `site-qa` (stage 4). Brief them with the matching prompt from `docs/framework/prompts/`.
 - Templates for every document are in `docs/framework/templates/`.
+- This may be a team project: `bin/asf team` says who holds each role. Each person confirms their own gate items (`bin/asf confirm`), requests are assigned to whoever acts on them, and one change is one pull request that closes its issue. A setting that only fits this machine goes in with `bin/asf set --local`.
 
 ## Rules that are never broken
 1. **White-label:** never name the delivery partner, offshore team, internal tools or rates anywhere public: copy, metadata, schema, llms.txt, file names, commit messages in client repos.

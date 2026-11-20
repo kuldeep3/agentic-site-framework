@@ -1,8 +1,109 @@
 {
   "_about": "The Agentic Site Framework as data. asf.py reads this to check gates and say what's next; the /asf command reads it to run a stage. Paths are relative to the client project root. Check types are documented in orchestrator/README.md.",
+  "roles": {
+    "lead": "Owns the client relationship and signs every gate (a PM, strategist or account owner)",
+    "designer": "Reviews the design in Figma and on the built pages; doesn't push pixels",
+    "developer": "Theme, plugin, deployment, hosting and access",
+    "content": "Copy, page briefs and the facts behind them",
+    "qa": "Runs the checks no script can and reads every page as the buyer",
+    "client": "The client's own approver: confirms facts, chooses the message and the design, signs off staging"
+  },
+  "change": {
+    "_about": "After launch, every piece of work is a change (bin/asf change): one issue, one branch, one pull request, and the gates below that fit its kind. Each gate has a signer role; items owned by another role need that person's confirmation first. A check or item with \"kinds\" applies only to those kinds. {change.file} and {change.slug} are filled in.",
+    "kinds": {
+      "fix": ["C3", "C4"],
+      "content": ["C1", "C3", "C4"],
+      "page": ["C1", "C2", "C3", "C4"],
+      "design": ["C2", "C3", "C4"],
+      "rework": ["C1", "C2", "C3", "C4"]
+    },
+    "kind_help": {
+      "fix": "Something broken: a link, a form, a layout bug",
+      "content": "New or changed copy on a page that exists",
+      "page": "A new page or a new section",
+      "design": "A restyle with the same words",
+      "rework": "A new service line, a rebrand or a new site structure: strategy and IA change first"
+    },
+    "merge_after": "C3",
+    "stale_days": 14,
+    "release_days": 7,
+    "review_after_days": 28,
+    "gates": [
+      {
+        "gate": "C1",
+        "title": "Brief",
+        "question": "What are we changing, and why?",
+        "board": "Requirement",
+        "signs": "lead",
+        "checks": [
+          {"id": "issue", "type": "front_set", "key": "issue", "label": "The request it answers is linked", "hint": "`bin/asf change set {change.slug} issue <number or link>` (file the request first: /asf intake)"},
+          {"id": "pages", "type": "front_set", "key": "pages", "label": "The pages it touches are named", "hint": "`bin/asf change set {change.slug} pages /pricing/,/services/`"},
+          {"id": "why", "type": "section_filled", "path": "{change.file}", "section": "What and why", "label": "What and why is written", "hint": "Fill “What and why” in {change.file}, in the client's words where there are any"},
+          {"id": "move", "type": "section_filled", "path": "{change.file}", "section": "What it should move", "label": "What it should move is named (the weekly report follows it up)", "hint": "Fill “What it should move” in {change.file}: one number, where it stands today, and when to look"},
+          {"id": "sections", "type": "table_rows", "path": "{change.file}", "section": "Sections", "min": 1, "kinds": ["page", "rework"], "label": "The page's sections are planned", "hint": "Fill the Sections table in {change.file} (docs/framework/patterns/page-recipes.md)"},
+          {"id": "length", "type": "briefs_max_sections", "glob": "{change.file}", "max": 8, "kinds": ["page", "rework"], "label": "8 sections at most", "hint": "Cut or merge sections: one idea, one home"}
+        ],
+        "manual": [
+          "The request is the client's own, with its source on the issue",
+          {"text": "Every new fact, number or name is in docs/truth.md as public, or marked [CONFIRM] for the client", "role": "content"},
+          {"text": "docs/01-strategy.md and docs/02-information-architecture.md are updated for this change, and the client agreed to them", "kinds": ["rework"]}
+        ]
+      },
+      {
+        "gate": "C2",
+        "title": "Design",
+        "question": "How does it look?",
+        "board": "Design",
+        "signs": "designer",
+        "checks": [
+          {"id": "review", "type": "front_set", "key": "figma", "label": "Shared for review (Figma file or page)", "hint": "Push the built pages to the review file at 1440 and 375 (docs/framework/prompts/07-design-direction.md C), then `bin/asf change set {change.slug} figma <link>`"}
+        ],
+        "manual": [
+          "Reviewed at 1440 and 375; every comment is resolved or filed as a type:design issue",
+          "Uses the site's own tokens and components, and passes the anti-AI-look checklist"
+        ]
+      },
+      {
+        "gate": "C3",
+        "title": "Build",
+        "question": "Is it right?",
+        "board": "Testing",
+        "signs": "qa",
+        "checks": [
+          {"id": "lint", "type": "command", "run": "python3 docs/framework/qa/lint_content.py content --config docs/framework/qa/config.json", "label": "Content lint: no errors", "hint": "Run the lint and fix what it lists"},
+          {"id": "source", "type": "change_pages", "label": "Its pages have no [CONFIRM] chips left", "hint": "Get each fact confirmed (or cut the claim), add it to docs/truth.md, remove the chip"},
+          {"id": "scan", "type": "change_urls", "env": "build", "label": "Its pages load, with no accessibility or performance errors (staging, or the local site)", "hint": "`python3 docs/framework/qa/launch.py <site> --pages <its pages> --only accessibility,performance` shows what's wrong"},
+          {"id": "pr", "type": "front_set", "key": "pr", "label": "A pull request is open and closes the issue", "hint": "Open it with “Closes #<issue>”, then `bin/asf change set {change.slug} pr <link>`"}
+        ],
+        "manual": [
+          "Looks right at 375, 768, 1440 and 1920",
+          "Opens in the block editor with no invalid blocks, and its forms and links work",
+          {"text": "Reads right as the buyer: one idea, one home, nothing repeated from another page", "role": "content"},
+          {"text": "The code was reviewed on the pull request", "role": "developer"}
+        ]
+      },
+      {
+        "gate": "C4",
+        "title": "Release",
+        "question": "Is it live, and safe?",
+        "board": "Launch",
+        "signs": "lead",
+        "checks": [
+          {"id": "released", "type": "front_set", "key": "released", "label": "Released to production (date recorded)", "hint": "Merge, deploy (docs/07-deployment.md), then `bin/asf change set {change.slug} released <date>`"},
+          {"id": "live", "type": "change_urls", "env": "production", "label": "Its pages are live on production, with no accessibility or performance errors", "hint": "Check the deploy and the cache; `python3 docs/framework/qa/launch.py <production> --pages <its pages> --only accessibility,performance`"}
+        ],
+        "manual": [
+          {"text": "Checked on production itself, not only on staging", "role": "developer"},
+          {"text": "The client signed off the change on staging", "kinds": ["page", "design", "rework"]},
+          "The issue is closed, and the client knows it's live"
+        ]
+      }
+    ]
+  },
   "stages": [
     {
       "id": "truth",
+      "signs": "lead",
       "gate": "G1",
       "title": "Truth",
       "question": "What is true about this business, and what can we prove in public?",
@@ -85,6 +186,7 @@
     },
     {
       "id": "story",
+      "signs": "lead",
       "gate": "G2",
       "title": "Story",
       "question": "What do we say, to whom, in what order, on which page?",
@@ -139,11 +241,12 @@
       "manual": [
         "The client chose a messaging route and said it defines their business",
         "The defining line fails the competitor test",
-        "Every recurring idea has exactly one home page"
+        {"text": "Every recurring idea has exactly one home page", "role": "content"}
       ]
     },
     {
       "id": "system",
+      "signs": "lead",
       "gate": "G3",
       "title": "System",
       "question": "How does it look, and how does it work?",
@@ -220,14 +323,15 @@
         }
       ],
       "manual": [
-        "Every comment in the design review file is resolved, or filed as a type:design issue",
-        "Designer review passes the anti-AI-look checklist",
-        "Not a re-skin: palette, type, layout and components differ from the wireframe and from other clients",
+        {"text": "Every comment in the design review file is resolved, or filed as a type:design issue", "role": "designer"},
+        {"text": "Designer review passes the anti-AI-look checklist", "role": "designer"},
+        {"text": "Not a re-skin: palette, type, layout and components differ from the wireframe and from other clients", "role": "designer"},
         "The client approved the home page and one inner page in the browser"
       ]
     },
     {
       "id": "ship",
+      "signs": "lead",
       "gate": "G4",
       "title": "Ship",
       "question": "Is it right, secure, fast, accessible, finished and deployed?",
@@ -303,18 +407,19 @@
         }
       ],
       "manual": [
-        "Responsive check passes at 375, 768, 1440 and 1920",
-        "Colour contrast passes (qa/contrast.js) in every colour context, and a keyboard-only pass reaches the menu, every link and the form",
-        "Block editor shows zero invalid blocks",
-        "The enquiry form works end to end on staging, and the email arrives (not in spam)",
-        "Backups run daily at the host, are kept at least 30 days, and one restore has been tested",
-        "Uptime monitoring on the production URL alerts a named person",
-        "Every admin has a personal login, a strong password and two-factor authentication",
+        {"text": "Responsive check passes at 375, 768, 1440 and 1920", "role": "qa"},
+        {"text": "Colour contrast passes (qa/contrast.js) in every colour context, and a keyboard-only pass reaches the menu, every link and the form", "role": "qa"},
+        {"text": "Block editor shows zero invalid blocks", "role": "qa"},
+        {"text": "The enquiry form works end to end on staging, and the email arrives (not in spam)", "role": "qa"},
+        {"text": "Backups run daily at the host, are kept at least 30 days, and one restore has been tested", "role": "developer"},
+        {"text": "Uptime monitoring on the production URL alerts a named person", "role": "developer"},
+        {"text": "Every admin has a personal login, a strong password and two-factor authentication", "role": "developer"},
         "The client signed off staging in writing"
       ]
     },
     {
       "id": "run",
+      "signs": "lead",
       "gate": "G5",
       "title": "Run",
       "question": "Is the site doing its job, and what do we change next?",
@@ -345,6 +450,12 @@
           "type": "campaigns",
           "label": "Live campaigns pass their checks; finished ones are closed",
           "hint": "`bin/asf campaign check <slug>` shows what's wrong; close finished ones with `bin/asf campaign close <slug> --outcome keep|redirect|unpublish`"
+        },
+        {
+          "id": "changes",
+          "type": "changes",
+          "label": "No change is stuck: none idle for two weeks, none built but unreleased for a week",
+          "hint": "`bin/asf change list` shows each open change and who it waits on; move it on, or `bin/asf change drop <slug> --reason …`"
         },
         {
           "id": "analytics",

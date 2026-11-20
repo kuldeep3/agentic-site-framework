@@ -1,0 +1,36 @@
+# Checks every pull request before a person reviews it: content lint, and the project's own files in order.
+# Copy to the client project as .github/workflows/asf-pr-checks.yml.
+#
+# It runs only what needs no running site: lint_content.py (block markup, front matter, page length,
+# repeated text, white-label names), a check that asf.json and the log still parse after a merge, and,
+# once the site has launched, the change record: a pull request that touches content/ or wp-content/
+# must carry a change (docs/changes/<slug>.md) signed up to Build (`bin/asf change pr`).
+# The crawl, the launch scan and the browser checks need the site, so they stay with the gates.
+name: ASF pull request checks
+
+on:
+  pull_request:
+    paths: ["content/**", "wp-content/**", "docs/**", "asf.json"]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # `bin/asf change pr` compares with the base branch
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Content lint
+        run: python3 docs/framework/qa/lint_content.py content --config docs/framework/qa/config.json
+      - name: Project state and log parse
+        run: |
+          python3 -m json.tool asf.json > /dev/null
+          bin/asf log > /dev/null
+          bin/asf status
+      - name: The change this pull request carries
+        run: bin/asf change pr --base "origin/${{ github.base_ref }}"
