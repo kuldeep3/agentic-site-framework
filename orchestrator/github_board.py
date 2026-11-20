@@ -8,8 +8,9 @@
         Rewrites the gate tracker from asf.json and the current gate's checks, and closes the
         milestone of every signed gate. `asf approve` runs it too, when GitHub is set up.
     bin/asf github review <file.pdf> [--title "…"] [--ask "…"] [--change <slug>] [--dry-run]
-        Sends a design review to the client: one issue that links the PDF (committed in the repo,
-        usually docs/reviews/) and says how to reply. Their comments on it are their feedback;
+        Sends a design review to the client: one issue that links the PDF and says how to reply.
+        The PDF is committed and pushed in a repository the client can open: this project's own
+        (docs/reviews/), or another checkout when the project's files are kept private. Their comments on it are their feedback;
         /asf intake files each point as a type:design item.
     bin/asf github confirm-issues [--dry-run]
         One "Facts to confirm" issue per page, listing its [CONFIRM] chips as checkboxes, on the
@@ -270,13 +271,17 @@ def review(root, state, args, core):
     pdf = (root / args.file) if not Path(args.file).is_absolute() else Path(args.file)
     if not pdf.exists() or pdf.suffix.lower() != ".pdf":
         sys.exit(f"No PDF at {args.file}. Build it first (docs/framework/prompts/07-design-direction.md E).")
-    try:
-        rel = pdf.resolve().relative_to(root.resolve()).as_posix()
-    except ValueError:
-        sys.exit("The PDF must be inside the project (docs/reviews/), so the client can open it on GitHub.")
+    # The PDF lives in whichever checkout the client can open: this project's own repo, or another one
+    # (an issues repo, a handover repo) when the project's files are kept where the client can't see them.
+    git = lambda *a: subprocess.run(["git", *a], cwd=pdf.resolve().parent, capture_output=True, text=True)  # noqa: E731
+    top = git("rev-parse", "--show-toplevel").stdout.strip()
+    if not top:
+        sys.exit(f"{args.file} isn't in a git checkout. Put it in a repository the client can open, so the issue can link to it.")
+    rel = pdf.resolve().relative_to(Path(top).resolve()).as_posix()
     g = cfg(state)
+    remote = re.search(r"github\.com[:/]([^/\s]+/[^/\s]+?)(?:\.git)?$", git("remote", "get-url", "origin").stdout.strip())
+    file_repo = remote.group(1) if remote else g.get("repo", "<owner/repo>")
     repo = g.get("repo", "<owner/repo>")
-    git = lambda *a: subprocess.run(["git", *a], cwd=root, capture_output=True, text=True)  # noqa: E731
     branch = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip() or "main"
     tracked = git("ls-files", "--error-unmatch", rel).returncode == 0
     clean = tracked and not git("status", "--porcelain", "--", rel).stdout.strip()
@@ -285,7 +290,7 @@ def review(root, state, args, core):
     not_there = (f"{rel} " + ("isn't committed yet" if not tracked else "has changes that aren't pushed yet") + f" on `{branch}`")
     if not pushed and not dry:  # the issue notifies the client at once: its link must already work
         sys.exit(f"Not sent: {not_there}. Commit and push the PDF first, so the client's link opens.")
-    url = f"https://github.com/{repo}/blob/{urllib.parse.quote(branch)}/{urllib.parse.quote(rel)}"
+    url = f"https://github.com/{file_repo}/blob/{urllib.parse.quote(branch)}/{urllib.parse.quote(rel)}"
     title = args.title or f"Design review: {pdf.stem.replace('-', ' ')}"
     ask = (args.ask or "Please look through it and tell us what you think.").strip()
     body = (f"**For your review:** [{pdf.name}]({url}) (open it, then use the download button for the full file)\n\n{ask}\n\n"
