@@ -23,3 +23,5 @@ A table ranked by impact on the goal: page · check · what's wrong (quote it) �
 - Any white-label hit (a partner name in copy, metadata, schema, llms.txt or file names) is the top finding, whatever else is wrong. Security errors from `launch.py` come next.
 - `launch.py` only reads public pages and a fixed list of file paths. Run it only on this client's own local, staging and production URLs.
 - Never mark something as passing if you didn't run it.
+
+Before you start, read `docs/lessons.md` and follow it. If what you're asked to do goes against the truth file, a lesson, the brief or an accessibility floor, say so in your report with what it rests on, and give the version you'd stand behind alongside the one that was asked for.

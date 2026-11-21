@@ -148,6 +148,7 @@ def reset_client_files(t, a, fw, ref):
         "It lives in `assets/css/brand.css` and `theme.json`; see `framework/patterns/design-system.md` §9.\n\n"
         "## 4. Design review\n*Stage 3.2a: each direction previewed on the real pages (`/?asf_direction=a`) and shown on one review page: a Claude artifact for the team, a PDF on GitHub for the client.*\n\n"
         "| | |\n|---|---|\n| Review page (Claude artifact) | |\n| Shared with (designer) | |\n| Client's PDF and review issue | |\n| Chosen direction, by whom, when | |\n| Comments open → issues | |\n")
+    shutil.copy(tmpl / "lessons.md", docs / "lessons.md")  # the rules this project learns from feedback; agents read it first
     # Requirements intake: raw client material goes in docs/intake/raw/ (git-ignored), items in docs/intake/items/.
     (docs / "intake/raw").mkdir(parents=True, exist_ok=True)
     (docs / "intake/raw/.gitkeep").write_text("")  # the folder exists in every clone; its contents never get committed

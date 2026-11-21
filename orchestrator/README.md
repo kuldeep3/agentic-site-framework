@@ -15,6 +15,7 @@ Runs one client project from requirements to deployment and measurement: it know
 | `asf.py` | The command-line tool (`bin/asf` in each project). Standard-library Python |
 | `claude-command.md` | The `/asf` command for Claude Code, installed as `.claude/commands/asf.md` |
 | `changes.py` | After launch (`bin/asf change`): every piece of work is a change with its own gates C1–C4, by kind |
+| `feedback.py` | Feedback (`bin/asf feedback`): what people said, what was done, and what became a rule in `docs/lessons.md` |
 | `intake.py` | Requirements intake (`bin/asf intake`): every request from any channel becomes one tracked item with its source |
 | `github_board.py` | The project manager's view (`bin/asf github`): labels, gate milestones, a Projects board and a gate tracker issue |
 | `board-sync.yml` | Optional GitHub Action that keeps the gate tracker in step; copy to `.github/workflows/` in the project |
@@ -26,9 +27,14 @@ Runs one client project from requirements to deployment and measurement: it know
 ## Use it
 In Claude Code, inside a project made by the starter:
 
-- `/asf`: where the project is and what's next
+- `/asf`: what's waiting on you, where the project is and what's next
 - `/asf run`: do the current stage's work up to its gate (agents in parallel where they can be; it asks you for anything only the client can provide)
 - `/asf approve G1`: record a sign-off after you confirm the manual items
+
+Nobody has to remember the commands. Two are enough for most people:
+
+- `bin/asf me`: gets the team's latest first, then shows what is waiting on you right now, with the exact command for each item, and what will come to you later. It works out who you are from this machine's git name (`bin/asf me "Name"` otherwise).
+- `bin/asf sync`: saves what you recorded (confirmations, sign-offs, feedback) and shares it with the team in one step: commit, pull, push.
 
 Or from a terminal:
 
@@ -70,6 +76,20 @@ One person with Claude Code can run a whole project. With a designer, developers
 `bin/asf log` shows who ran what. The name comes from `ASF_USER`, or `git config user.name`.
 
 Every pull request gets the same checklist (`.github/pull_request_template.md`: the request it closes, the change it carries, what was checked, who needs to look), and `pr-checks.yml` runs the content lint on it. After launch it also refuses a pull request that changes the site without a change signed up to Build (below).
+
+## Feedback and learning (all stages)
+A comment that is acted on once and forgotten gets made again. So feedback is recorded, and what should hold from now on becomes a rule the agents read before every stage and every change.
+
+| Step | How |
+|---|---|
+| Record | `bin/asf feedback add "What they said" --from "Name" --area design\|copy\|build\|process --on <change or page> --tag <theme>`. Design comments filed by `/asf intake` are recorded automatically. It stays open until it's closed |
+| Close | `bin/asf feedback close <id> --outcome applied\|declined\|overruled --note "…"`. Declined: the reason the person was given. Overruled: built as asked although the evidence said otherwise, with the concern on record |
+| Promote | `bin/asf feedback promote <id> --rule "…" [--scope framework]` appends the rule to `docs/lessons.md`, with the feedback it came from |
+| Learn | `/asf learn` (prompt 11), monthly: `bin/asf feedback patterns` lists what was said more than once and what was overruled; the agent also reads the results of finished changes; a person accepts or rejects each proposed rule; `bin/asf feedback reviewed --by "Name"` |
+
+What enforces it: gates G3, C2 and C3 fail while feedback on the piece is open (`feedback_closed`); G5 fails when closed feedback has gone five weeks without a learning pass (`learning_recent`); and the designer confirms at C2 that the review is recorded. `docs/lessons.md` is the project's own memory; a rule marked "for the framework too" is proposed to the framework itself, which is how one site's lesson reaches the next.
+
+**The agents don't simply comply.** When a request goes against a signed brief, a lesson, an accessibility or legal floor, or what a past result showed, the agent says so once before building, with what the concern rests on and what it would do instead. The person then decides; if they go ahead, it's built properly and recorded as *overruled*, and the learning pass checks how it turned out. Every gate carries a `why` in `workflow.json`, printed by `bin/asf check` and when a sign-off is refused, so a person who runs into a gate learns what it's for (PRINCIPLES 15 and 16).
 
 ## Changes: gates for one piece of work (after launch)
 G1–G5 take the site to launch once. After that, a new page, a restyle, a copy edit or a fix is a **change**: one issue, one branch, one pull request, and a short run of the same stages.

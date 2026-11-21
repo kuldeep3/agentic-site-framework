@@ -207,6 +207,13 @@ def add(root, state, args, core):
         print("Dry run: nothing filed.")
         return
     state["log"].append({"at": record["at"], "event": f"intake: {args.type} from {args.source}", "note": args.title, "item": record})
+    if args.type == "design":  # a design comment is feedback too: it stays open until it's closed with what was done
+        import hashlib
+        text = args.quote or args.title
+        state["log"].append({"at": record["at"], "event": f"feedback via intake ({args.source})", "note": text[:140],
+                             "feedback": {"action": "add", "id": hashlib.sha1(f"{record['at']}{text}".encode()).hexdigest()[:6], "text": text,
+                                          "from": args.source, "role": "", "area": "design", "on": args.page or "", "tag": "",
+                                          "ref": record.get("issue") or args.ref, "outcome": "", "note": ""}})
     core.save_state(root, state)
     print(f"✓ Filed ({stage}, {role}" + (f", @{record['assignee']}" if record.get("assignee") else "") + f"): {where}")
 

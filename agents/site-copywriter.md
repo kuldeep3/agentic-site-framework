@@ -27,3 +27,5 @@ Plainspoken, specific, warm, confident, never loud. Short sentences. No exclamat
 
 ## When you finish
 Run `python3 docs/framework/qa/lint_content.py content` and fix every error in your files. Report: files written, the `[CONFIRM]` items you added, the warnings you left and why, and any brief instruction you couldn't follow.
+
+Before you start, read `docs/lessons.md` and follow it. If what you're asked to do goes against the truth file, a lesson, the brief or an accessibility floor, say so in your report with what it rests on, and give the version you'd stand behind alongside the one that was asked for.

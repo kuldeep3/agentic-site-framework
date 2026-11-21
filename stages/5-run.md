@@ -42,6 +42,7 @@ After launch nothing reaches the site outside a change: one issue, one branch, o
 A new service line, a rebrand or a new site structure is a `rework`: `docs/01-strategy.md` and `docs/02-information-architecture.md` change first, and the client agrees to them, before any page does.
 
 ## Monthly
+- **The learning pass** (`/asf learn`, prompt [`11-learn.md`](../prompts/11-learn.md)): read the month's feedback for what recurs, the results of finished changes, and everything that was built although the evidence said otherwise. A person accepts the rules worth keeping; they go into `docs/lessons.md`. G5 asks for it every five weeks.
 - **One improvement proposal**, sized and priced: a new case study, a landing page for a query that's gaining, a page test, a new offer page. This is how the engagement grows.
 - Content: one case study or one answer-first article mapped to an ICP query.
 - Refresh `[CONFIRM]` items and outdated numbers in `entity.php` and on pages.

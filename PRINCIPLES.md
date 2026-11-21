@@ -1,6 +1,6 @@
 # Principles
 
-Fourteen rules. Each one comes from something that went wrong, or was pushed back on, while building real client sites with this framework (a US marketing agency and a UK car care brand, anonymised here). The "why" is the part to remember.
+Sixteen rules. Each one comes from something that went wrong, or was pushed back on, while building real client sites with this framework (a US marketing agency and a UK car care brand, anonymised here). The "why" is the part to remember.
 
 ### 1. Ground the story in the client's truth, not in agency clichés
 Write from the client's own words, their clients' words and their real business arc, all collected in the truth file.
@@ -57,3 +57,11 @@ Pages are stored as block markup in files, seeded by a script; client facts live
 ### 14. Measure from day one; the weekly report is the service
 Analytics events ship with the build. A report goes out every week, asked for or not.
 **Why:** it's how the engagement stays recurring ("the report is the service").
+
+### 15. Feedback said twice becomes a rule
+Every comment on the work is recorded with who gave it and what was done. One that should hold from now on is promoted to the project's lessons, which the agents read before every stage and every change. Once a month someone reads all of it for what keeps coming back.
+**Why:** until this rule, a lesson reached the framework only when someone copied it across by hand after a project ended, and on a live project a designer's comment was kept with the one piece it was about. Whether the next piece knew about it depended on someone remembering to write it into the rules.
+
+### 16. Say so before you build it
+When a request works against the goal, the evidence, an agreed decision or a legal or accessibility floor, say so first: what the concern is, what it rests on, and what would work instead. Then do what the person decides, and record it. Don't comply silently, and don't refuse silently either.
+**Why:** a page was built with a sign-up form the design could not be met with: the form came from another service in its own frame, which the site's styles can't reach. This was known before a line was written, and was put in the notes instead of in front of the person who could decide. They found out on staging. And when a client asked for orange text on a light ground, building it without saying it was unreadable (2.7:1) would have been the easy thing; it was built as asked, with the number on record, and left as an open question.

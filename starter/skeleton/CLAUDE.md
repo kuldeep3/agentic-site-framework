@@ -5,6 +5,9 @@ This project is built with the **Agentic Site Framework** (`docs/framework/`). R
 ## Start here
 Run **`/asf`**: it shows where the project is (stage and gate), what the gate still needs, and what to do next. `/asf run` works the current stage up to its gate; `/asf approve G1` records a sign-off after the lead confirms. After launch, every new page, restyle, copy edit or fix is a change with its own gates (`/asf change new …`, then `/asf change run <slug>`); `/asf report` is the weekly report and `/asf campaign new …` starts a campaign (one landing page, tagged links, results). State lives in `asf.json` and the log in `docs/log/` (both via `bin/asf`); never edit them by hand.
 
+## Before any work
+Read `docs/lessons.md`: what this project has learnt from feedback and results. Record every comment on the work (`bin/asf feedback add`), and when a request goes against the goal, the evidence or an agreed decision, say so before building it (`docs/framework/PRINCIPLES.md` 15 and 16).
+
 ## How work runs here
 - Work goes stage by stage: Truth → Story → System → Ship → Run (`docs/framework/stages/`). **Stop at each gate** and ask the lead to sign it off. Don't start a stage whose inputs don't exist yet (no copy before `docs/truth.md`; no build before `docs/01-strategy.md` is approved).
 - Specialist subagents are in `.claude/agents/`: `site-researcher` (stage 1), `site-strategist` (stage 2), `site-copywriter` (stage 3, one per page family, in parallel), `site-qa` (stage 4). Brief them with the matching prompt from `docs/framework/prompts/`.

@@ -32,7 +32,7 @@
       {
         "gate": "C1",
         "title": "Brief",
-        "question": "What are we changing, and why?",
+        "question": "What are we changing, and why?", "why": "Ten minutes agreeing what and why saves building the wrong thing, and names the number that will say whether it worked.",
         "board": "Requirement",
         "signs": "lead",
         "checks": [
@@ -52,28 +52,32 @@
       {
         "gate": "C2",
         "title": "Design",
-        "question": "How does it look?",
+        "question": "How does it look?", "why": "The designer sees it before the client does, and before it's built everywhere. It's also where anything that can't be built as drawn is said out loud.",
         "board": "Design",
         "signs": "designer",
         "checks": [
-          {"id": "review", "type": "front_set", "keys": ["review", "figma"], "label": "Shared with the designer for review (a Claude artifact)", "hint": "Put the changed pages on a review page at 1440 and 375 and publish it as a Claude artifact (docs/framework/prompts/07-design-direction.md C), then `bin/asf change set {change.slug} review <link>`"}
+          {"id": "review", "type": "front_set", "keys": ["review", "figma"], "label": "Shared with the designer for review (a Claude artifact)", "hint": "Put the changed pages on a review page at 1440 and 375 and publish it as a Claude artifact (docs/framework/prompts/07-design-direction.md C), then `bin/asf change set {change.slug} review <link>`"},
+          {"id": "feedback", "type": "feedback_closed", "on": "{change.slug}", "label": "No feedback on this change is left open", "hint": "`bin/asf feedback list`, then `bin/asf feedback close <id> --outcome applied|declined|overruled --note …`"}
         ],
         "manual": [
           "Reviewed on the review page at 1440 and 375; every comment is resolved or filed as a type:design issue",
-          "Uses the site's own tokens and components, and passes the anti-AI-look checklist"
+          "Uses the site's own tokens and components, and passes the anti-AI-look checklist",
+          "The review is recorded (`bin/asf feedback add`), and a comment that should hold from now on is a rule in docs/lessons.md",
+          {"text": "Everything shown can be built with the tools the brief names; anything that can't is listed", "role": "developer"}
         ]
       },
       {
         "gate": "C3",
         "title": "Build",
-        "question": "Is it right?",
+        "question": "Is it right?", "why": "Scripts catch what people miss, and people catch what scripts miss. Merging before both means fixing it on the live site.",
         "board": "Testing",
         "signs": "qa",
         "checks": [
           {"id": "lint", "type": "command", "run": "python3 docs/framework/qa/lint_content.py content --config docs/framework/qa/config.json", "label": "Content lint: no errors", "hint": "Run the lint and fix what it lists"},
           {"id": "source", "type": "change_pages", "label": "Its pages have no [CONFIRM] chips left", "hint": "Get each fact confirmed (or cut the claim), add it to docs/truth.md, remove the chip"},
           {"id": "scan", "type": "change_urls", "env": "build", "label": "Its pages load, with no accessibility or performance errors (staging, or the local site)", "hint": "`python3 docs/framework/qa/launch.py <site> --pages <its pages> --only accessibility,performance` shows what's wrong"},
-          {"id": "pr", "type": "front_set", "key": "pr", "label": "A pull request is open and closes the issue", "hint": "Open it with “Closes #<issue>”, then `bin/asf change set {change.slug} pr <link>`"}
+          {"id": "pr", "type": "front_set", "key": "pr", "label": "A pull request is open and closes the issue", "hint": "Open it with “Closes #<issue>”, then `bin/asf change set {change.slug} pr <link>`"},
+          {"id": "feedback", "type": "feedback_closed", "on": "{change.slug}", "label": "No feedback on this change is left open", "hint": "`bin/asf feedback list`, then `bin/asf feedback close <id> --outcome applied|declined|overruled --note …`"}
         ],
         "manual": [
           "Looks right at 375, 768, 1440 and 1920",
@@ -85,7 +89,7 @@
       {
         "gate": "C4",
         "title": "Release",
-        "question": "Is it live, and safe?",
+        "question": "Is it live, and safe?", "why": "Live is not the same as staging: caches, plugins and data differ. Someone looks at production, and the client hears that it's done.",
         "board": "Launch",
         "signs": "lead",
         "checks": [
@@ -106,7 +110,7 @@
       "signs": "lead",
       "gate": "G1",
       "title": "Truth",
-      "question": "What is true about this business, and what can we prove in public?",
+      "question": "What is true about this business, and what can we prove in public?", "why": "A site built on claims nobody checked gets rewritten after the client reads it, or after a customer does.",
       "doc": "docs/framework/stages/1-truth.md",
       "agents": [
         "site-researcher"
@@ -189,7 +193,7 @@
       "signs": "lead",
       "gate": "G2",
       "title": "Story",
-      "question": "What do we say, to whom, in what order, on which page?",
+      "question": "What do we say, to whom, in what order, on which page?", "why": "Design and copy both follow the message. If the message is wrong, every page built on it is redone.",
       "doc": "docs/framework/stages/2-story.md",
       "agents": [
         "site-strategist"
@@ -249,7 +253,7 @@
       "signs": "lead",
       "gate": "G3",
       "title": "System",
-      "question": "How does it look, and how does it work?",
+      "question": "How does it look, and how does it work?", "why": "The client and the designer see the real pages before every page is built in that look. Changing direction afterwards is ten times the work.",
       "doc": "docs/framework/stages/3-system.md",
       "agents": [
         "site-copywriter"
@@ -300,6 +304,13 @@
           "hint": "Record the client's choice: `asf set design.direction \"B, chosen by <name> on <date>\"`"
         },
         {
+          "id": "feedback",
+          "type": "feedback_closed",
+          "area": "design",
+          "label": "No design feedback is left open",
+          "hint": "`bin/asf feedback list`, then `bin/asf feedback close <id> --outcome applied|declined|overruled --note …`; promote what should hold from now on"
+        },
+        {
           "id": "design-layer",
           "type": "not_contains",
           "glob": "wp-content/themes/*/assets/css/brand.css",
@@ -334,7 +345,7 @@
       "signs": "lead",
       "gate": "G4",
       "title": "Ship",
-      "question": "Is it right, secure, fast, accessible, finished and deployed?",
+      "question": "Is it right, secure, fast, accessible, finished and deployed?", "why": "Launch is the one moment the whole site is checked at once. What slips through here is found by visitors.",
       "doc": "docs/framework/stages/4-ship.md",
       "agents": [
         "site-qa"
@@ -422,7 +433,7 @@
       "signs": "lead",
       "gate": "G5",
       "title": "Run",
-      "question": "Is the site doing its job, and what do we change next?",
+      "question": "Is the site doing its job, and what do we change next?", "why": "A site nobody measures drifts: a plugin update, an expired certificate or a dead form goes unnoticed for weeks.",
       "doc": "docs/framework/stages/5-run.md",
       "agents": [],
       "prompts": [
@@ -456,6 +467,13 @@
           "type": "changes",
           "label": "No change is stuck: none idle for two weeks, none built but unreleased for a week",
           "hint": "`bin/asf change list` shows each open change and who it waits on; move it on, or `bin/asf change drop <slug> --reason …`"
+        },
+        {
+          "id": "learning",
+          "type": "learning_recent",
+          "days": 35,
+          "label": "Feedback has been looked at for rules in the last five weeks",
+          "hint": "/asf learn: `bin/asf feedback patterns`, promote what should hold, then `bin/asf feedback reviewed --by \"Name\"`"
         },
         {
           "id": "analytics",

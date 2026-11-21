@@ -337,6 +337,8 @@ def check(root, state, a, core):
     trail = " → ".join(("✓ " if g["gate"] in st["signed"] else "") + f"{g['gate']} {g['title']}" for g in st["gates"])
     print(f"{c['title']} ({c['slug']}, {c['kind']}): {trail}")
     print(f"Gate {gate['gate']} ({gate['title']}): {gate['question']}")
+    if gate.get("why"):
+        print(f"Why this gate: {gate['why']}")
     for r in res:
         mark = {"pass": "✓", "fail": "✗", "skipped": "–"}[r["status"]]
         print(f"  {mark} {r['label']}" + (f"  ({r['detail']})" if r["detail"] and r["status"] != "pass" else ""))
@@ -391,6 +393,8 @@ def approve(root, state, a, core):
         print(f"Not signed: {len(failing)} automated check(s) fail:")
         for r in failing:
             print(f"  ✗ {r['label']}" + (f" ({r['detail']})" if r["detail"] else ""))
+        if gate.get("why"):
+            print(f"Why this gate: {gate['why']}")
         sys.exit("Fix them, or sign with --override \"reason\" (recorded in the log).")
     items = manual_items(state, c, gate, core)
     mine = core.roles_of(state, a.by) | {gate["signs"]}

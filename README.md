@@ -80,6 +80,7 @@ Then open the new project folder in Claude Code and run **`/asf`**. The [orchest
 - `/asf approve G1`: records a gate sign-off after the lead confirms the manual items
 - `/asf intake`: turns requests from email, calls, GitHub issues, chat and documents into one tracked item each, with its source and an owner. With a team, it first copies new material from the shared drive folder
 - `/asf change new …`: after launch, every new page, restyle, copy edit or fix is a change with its own gates (C1 Brief → C2 Design → C3 Build → C4 Release), one issue and one pull request
+- `/asf feedback …` and `/asf learn`: every comment on the work is recorded with what was done; what should hold from now on becomes a rule in `docs/lessons.md`, which the agents read first. The agents also say so before building something that works against the goal or the evidence
 - `/asf board`: sets up and syncs the project manager's view on GitHub (a Projects board with a Stage field, milestones G1–G5, a gate tracker issue)
 - `bin/asf status` / `bin/asf next`: the same from a terminal
 
@@ -91,7 +92,7 @@ Each stage doc lists the exact prompts ([`prompts/`](prompts/)), the templates t
 
 ```
 README.md            ← you are here
-PRINCIPLES.md        the 14 rules learned on real projects (read before anything else)
+PRINCIPLES.md        the 16 rules learned on real projects (read before anything else)
 stages/              how to run each stage: inputs, steps, AI roles, prompts, outputs, gate
 patterns/            messaging formulas, page recipes, design system rules, AI-search (AEO) checklist, campaigns
 templates/           goal document, truth file, strategy, IA, page brief, content checklist, weekly report, decisions log,

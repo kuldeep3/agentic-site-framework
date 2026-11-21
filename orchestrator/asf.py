@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """asf: the Agentic Site Framework orchestrator for one client project.
 
+    bin/asf me ["Name"]         what is waiting on you, with the exact command for each (start here)
+    bin/asf sync                save what you recorded and share it with the team (commit, pull, push)
     bin/asf status              where the project is, gate by gate
     bin/asf next  [--json]      the one thing to do next (what the /asf command acts on)
     bin/asf check [G1..G5]      run a gate's automated checks (default: the current gate)
@@ -20,6 +22,8 @@
                                 one offer, one landing page, tagged links, results (see campaigns.py)
     bin/asf change new|list|check|set|confirm|approve|drop|board|pr …
                                 after launch: one change, one issue, one pull request, its own gates C1–C4 (see changes.py)
+    bin/asf feedback add|close|promote|list|patterns|reviewed
+                                what people said about the work, what was done, and what became a rule (see feedback.py)
     bin/asf intake sources|add|done|list
                                 requirements from email, calls, issues and docs, one tracked item each (see intake.py)
     bin/asf github init|sync|confirm-issues|review [--dry-run]
@@ -382,6 +386,12 @@ def run_check(root, state, check):
         sys.path.insert(0, str(HERE))
         import campaigns  # noqa: E402  (beside this file)
         return campaigns.gate(root, state, sys.modules[__name__])
+    if t in ("feedback_closed", "learning_recent"):
+        sys.path.insert(0, str(HERE))
+        import feedback  # noqa: E402  (beside this file)
+        if t == "feedback_closed":
+            return feedback.gate_closed(state, check.get("on"), check.get("area"))
+        return feedback.gate_learning(state, check.get("days", 35))
     if t == "changes":
         sys.path.insert(0, str(HERE))
         import changes  # noqa: E402  (beside this file)
@@ -471,6 +481,8 @@ def cmd_check(args):
                           "manual_items": manual_items(state, stage)}, indent=2, ensure_ascii=False))
         return
     print(f"Gate {stage['gate']} ({stage['title']}): automated checks")
+    if stage.get("why"):
+        print(f"Why this gate: {stage['why']}")
     for r in res:
         mark = {"pass": "✓", "fail": "✗", "skipped": "–"}[r["status"]]
         line = f"  {mark} {r['label']}"
@@ -529,6 +541,8 @@ def cmd_approve(args):
         print(f"Not signed: {len(failing)} automated check(s) fail:")
         for r in failing:
             print(f"  ✗ {r['label']}" + (f" ({r['detail']})" if r["detail"] else ""))
+        if stage.get("why"):
+            print(f"Why this gate: {stage['why']}")
         sys.exit("Fix them, or sign with --override \"reason\" (recorded in the log).")
     # Items another role owns need that person's own confirmation, once someone holds the role.
     items = manual_items(state, stage)
@@ -651,6 +665,111 @@ def cmd_campaign(args):
     save_state(root, state)
 
 
+def cmd_me(args):
+    """What is waiting on one person, with the exact command for each. Nobody has to remember the commands."""
+    root = find_root()
+    # Get the team's latest first, so what's shown is what's true now, not what this machine last saw.
+    fresh = "this machine's copy (--offline)"
+    if not args.offline:
+        try:
+            r = subprocess.run(["git", "pull", "--rebase", "--autostash", "--quiet"], cwd=root, capture_output=True, text=True, timeout=60)
+            fresh = "the team's latest" if r.returncode == 0 else "this machine's copy: couldn't get the team's latest (" + (r.stderr.strip().splitlines() or ["no remote"])[-1][:90] + ")"
+        except (OSError, subprocess.TimeoutExpired):
+            fresh = "this machine's copy: couldn't reach the team's repository"
+    state = load_state(root); wf = load_workflow(root)
+    sys.path.insert(0, str(HERE))
+    import changes  # noqa: E402  (beside this file)
+    import feedback  # noqa: E402
+    who = args.name
+    if not who:  # match this machine's name to someone on the team: "Kuldeep Upreti" is "Kuldeep"
+        me = actor().lower()
+        names = {p["name"] for ps in (state.get("team") or {}).values() for p in ps if p.get("name")}
+        who = next((n for n in names if n.lower() == me or n.lower() in me.split() or me in n.lower().split()), None)
+    if not who:
+        sys.exit(f'I can\'t tell who you are from "{actor()}". Say it: `bin/asf me "Your name"` (the team: `bin/asf team`).')
+    roles = roles_of(state, who)
+    print(f"{who} ({', '.join(sorted(roles)) or 'no role yet: `bin/asf team add <role> \"' + who + '\"`'}) · {state['client']} · from {fresh}")
+    todo, waiting = [], []
+
+    def gate_work(label, gate_name, items, signs, checks_fail, confirm_cmd, approve_cmd):
+        mine = [i for i in items if not i["confirmed_by"] and i["role"] in roles and i["role"] != signs]
+        if mine:
+            todo.append((f"{label}: confirm {'this' if len(mine) == 1 else 'these'}", [f"{i['n']}. {i['text']}" for i in mine],
+                         confirm_cmd(" ".join(str(i["n"]) for i in mine))))
+        if signs in roles:
+            others = [i for i in items if not i["confirmed_by"] and i["people"] and i["role"] not in roles]
+            if checks_fail:
+                waiting.append(f"{label}: yours to sign once {len(checks_fail)} check(s) pass, e.g. {checks_fail[0]['label'][:70]}")
+            elif others:
+                waiting.append(f"{label}: yours to sign once " + ", ".join(sorted({i['role'] + ' (' + ', '.join(i['people']) + ')' for i in others})) + " confirm")
+            else:
+                yours = [f"{i['n']}. {i['text']}" for i in items if i["role"] in roles and not i["confirmed_by"]]
+                todo.append((f"{label}: sign {gate_name}" + (" (you're confirming these by signing)" if yours else ""), yours, approve_cmd))
+
+    cur = stage_by(wf, state["stage"])
+    if cur["signs"] in roles or any(r in roles for r in cur["manual_roles"]):
+        fails = [r for r in evaluate(root, state, cur) if r["status"] == "fail"]
+        if True:
+            gate_work(f"The project, {cur['gate']} {cur['title']}", cur["gate"], manual_items(state, cur), cur["signs"], fails,
+                      lambda ns: f'bin/asf confirm {cur["gate"]} {ns} --by "{who}"', f'bin/asf approve {cur["gate"]} --by "{who}"')
+    if changes.slugs(root):
+        cfg = changes.config(root)
+        for slug in changes.slugs(root):
+            c = changes.read(root, slug); st = changes.standing(state, cfg, c)
+            if st["status"] != "open":
+                continue
+            g = st["current"]
+            fails = [r for r in changes.run_checks(root, state, c, g, sys.modules[__name__], offline=True) if r["status"] == "fail"]
+            gate_work(f"{c['title']} ({slug})", f"{g['gate']} {g['title']}", changes.manual_items(state, c, g, sys.modules[__name__]), g["signs"], fails,
+                      lambda ns, s=slug, gg=g["gate"]: f'bin/asf change confirm {s} {gg} {ns} --by "{who}"',
+                      f'bin/asf change approve {slug} {g["gate"]} --by "{who}"')
+    opened = [r for r in feedback.items(state).values() if r["outcome"] == "open"]
+    if not todo:
+        print("\nNothing needs you right now.")
+    for n, (what, lines, cmd) in enumerate(todo, 1):
+        print(f"\n{n}. {what}")
+        for ln in lines:
+            print(f"     {ln}")
+        print(f"   → {cmd}")
+    if waiting:
+        print("\nComing to you later:")
+        for w in waiting:
+            print(f"  · {w}")
+    if opened and ("lead" in roles or "designer" in roles or "developer" in roles):
+        print(f"\n{len(opened)} piece(s) of feedback still open: `bin/asf feedback list`")
+    if todo:
+        print("\nAfter any of these, `bin/asf sync` saves your part and shares it with the team.")
+
+
+def cmd_sync(args):
+    """Save what this person recorded (the log, change records, lessons) and share it: commit, pull, push."""
+    root = find_root()
+    git = lambda *a: subprocess.run(["git", *a], cwd=root, capture_output=True, text=True)  # noqa: E731
+    paths = [p for p in ("asf.json", "docs/log", "docs/changes", "docs/lessons.md") if (root / p).exists()]
+    git("add", "--", *paths)
+    if git("diff", "--cached", "--quiet", "--", *paths).returncode == 0:
+        r = git("pull", "--rebase", "--autostash")
+        print("Nothing of yours to save. " + ("Up to date with the team." if r.returncode == 0 else f"Couldn't pull: {r.stderr.strip()[:150]}"))
+        return
+    r = git("commit", "-m", args.message or f"Project record: {actor()}'s confirmations and sign-offs", "--", *paths)
+    if r.returncode != 0:
+        sys.exit(f"Couldn't commit: {(r.stderr or r.stdout).strip()[:200]}")
+    r = git("pull", "--rebase", "--autostash")
+    if r.returncode != 0:
+        sys.exit(f"Saved here, but couldn't get the team's latest: {r.stderr.strip()[:200]}\nNothing was pushed. Ask for help before trying again.")
+    r = git("push")
+    if r.returncode != 0:
+        sys.exit(f"Saved here, but couldn't share it: {r.stderr.strip()[:200]}")
+    print("✓ Saved and shared with the team.")
+
+
+def cmd_feedback(args):
+    root = find_root(); state = load_state(root)
+    sys.path.insert(0, str(HERE))
+    import feedback  # noqa: E402  (beside this file)
+    feedback.main(root, state, args, sys.modules[__name__])
+
+
 def cmd_change(args):
     root = find_root(); state = load_state(root)
     sys.path.insert(0, str(HERE))
@@ -769,6 +888,15 @@ def main():
     p.add_argument("--index", action="store_true", help="let search engines index the landing page (default: noindex)")
     p.add_argument("--content", help="creative names for utm_content, comma-separated"); p.add_argument("--url", help="check this site instead of the recorded one")
     p.add_argument("--write", action="store_true"); p.add_argument("--outcome", choices=["keep", "redirect", "unpublish"]); p.add_argument("--to"); p.add_argument("--note")
+    p = sub.add_parser("me"); p.add_argument("name", nargs="?", help="your name, as on the team (default: worked out from this machine)")
+    p.add_argument("--offline", action="store_true", help="don't fetch the team's latest first")
+    p = sub.add_parser("sync"); p.add_argument("--message", "-m")
+    p = sub.add_parser("feedback"); p.add_argument("action", choices=["add", "close", "promote", "list", "patterns", "reviewed"])
+    p.add_argument("rest", nargs="*", help="for `add`: what was said; for `close` and `promote`: the feedback's id")
+    p.add_argument("--from", dest="frm", help="who gave it"); p.add_argument("--role"); p.add_argument("--area", help="design, copy, build or process")
+    p.add_argument("--on", help="the change or page it's about"); p.add_argument("--tag", help="a short theme, so repeats can be found: line-breaks, logo, tone…")
+    p.add_argument("--ref"); p.add_argument("--outcome"); p.add_argument("--note"); p.add_argument("--rule"); p.add_argument("--scope"); p.add_argument("--by")
+    p.add_argument("--all", action="store_true")
     p = sub.add_parser("change"); p.add_argument("action", choices=["new", "list", "check", "status", "set", "confirm", "approve", "drop", "board", "pr"])
     p.add_argument("rest", nargs="*", help="the change's slug, then a gate (C1–C4), item numbers, or a key and value")
     p.add_argument("--title"); p.add_argument("--kind"); p.add_argument("--issue"); p.add_argument("--pages", help="the URLs it touches, comma-separated: /pricing/,/services/")
@@ -793,7 +921,7 @@ def main():
         a.files = [a.title, *a.files]
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
      "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log,
-     "intake": cmd_intake, "github": cmd_github, "team": cmd_team, "confirm": cmd_confirm, "change": cmd_change}[a.cmd](a)
+     "intake": cmd_intake, "github": cmd_github, "team": cmd_team, "confirm": cmd_confirm, "change": cmd_change, "feedback": cmd_feedback, "me": cmd_me, "sync": cmd_sync}[a.cmd](a)
 
 
 if __name__ == "__main__":

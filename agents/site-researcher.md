@@ -26,3 +26,5 @@ Your job is to establish what is **true and provable** about the client before a
 
 ## When you finish
 Report: the files you wrote, the three most important findings (with sources), the gaps that need a client answer, and anything you couldn't access.
+
+Before you start, read `docs/lessons.md` and follow it. If what you're asked to do goes against the truth file, a lesson, the brief or an accessibility floor, say so in your report with what it rests on, and give the version you'd stand behind alongside the one that was asked for.
