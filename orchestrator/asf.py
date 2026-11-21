@@ -3,6 +3,7 @@
 
     bin/asf me ["Name"]         what is waiting on you, with the exact command for each (start here)
     bin/asf sync                save what you recorded and share it with the team (commit, pull, push)
+    bin/asf install             once per person: an `asf` shortcut in your shell, so the commands work from any folder
     bin/asf status              where the project is, gate by gate
     bin/asf next  [--json]      the one thing to do next (what the /asf command acts on)
     bin/asf check [G1..G5]      run a gate's automated checks (default: the current gate)
@@ -741,6 +742,31 @@ def cmd_me(args):
         print("\nAfter any of these, `bin/asf sync` saves your part and shares it with the team.")
 
 
+def cmd_install(args):
+    """Add an `asf` shortcut to this person's shell, so the commands work from any folder."""
+    root = find_root()
+    name = args.name or "asf"
+    if not re.fullmatch(r"[a-z][a-z0-9_-]{1,20}", name):
+        sys.exit("The shortcut's name: lowercase letters, numbers, - or _.")
+    shell = os.path.basename(os.environ.get("SHELL", "zsh"))
+    rc = Path.home() / (".bashrc" if shell == "bash" else ".zshrc")
+    line = f'{name}() {{ (cd {shlex.quote(str(root))} && bin/asf "$@"); }}  # {load_state(root)["client"]} website'
+    have = rc.read_text(encoding="utf-8") if rc.exists() else ""
+    if re.search(rf"^{re.escape(name)}\(\) ", have, re.M):
+        existing = next(ln for ln in have.splitlines() if ln.startswith(f"{name}() "))
+        if str(root) in existing.replace("~", str(Path.home())):
+            print(f"`{name}` is already set up for this project in {rc}.")
+        else:
+            print(f"{rc} already has a `{name}` shortcut, for another folder:\n  {existing}\nGive this one its own name: `bin/asf install --name {name}-{root.name[:12].lower()}`")
+        return
+    if args.dry_run:
+        print(f"Would add this line to {rc}:\n  {line}")
+        return
+    with open(rc, "a", encoding="utf-8") as f:
+        f.write(("" if have.endswith("\n") or not have else "\n") + line + "\n")
+    print(f"✓ Added `{name}` to {rc}. Open a new terminal (or run `source {rc}`), then from any folder:\n    {name} me\n    {name} sync")
+
+
 def cmd_sync(args):
     """Save what this person recorded (the log, change records, lessons) and share it: commit, pull, push."""
     root = find_root()
@@ -891,6 +917,7 @@ def main():
     p = sub.add_parser("me"); p.add_argument("name", nargs="?", help="your name, as on the team (default: worked out from this machine)")
     p.add_argument("--offline", action="store_true", help="don't fetch the team's latest first")
     p = sub.add_parser("sync"); p.add_argument("--message", "-m")
+    p = sub.add_parser("install"); p.add_argument("--name", help="the shortcut's name (default: asf)"); p.add_argument("--dry-run", action="store_true")
     p = sub.add_parser("feedback"); p.add_argument("action", choices=["add", "close", "promote", "list", "patterns", "reviewed"])
     p.add_argument("rest", nargs="*", help="for `add`: what was said; for `close` and `promote`: the feedback's id")
     p.add_argument("--from", dest="frm", help="who gave it"); p.add_argument("--role"); p.add_argument("--area", help="design, copy, build or process")
@@ -921,7 +948,7 @@ def main():
         a.files = [a.title, *a.files]
     {"init": cmd_init, "status": cmd_status, "check": cmd_check, "next": cmd_next, "approve": cmd_approve,
      "skip": cmd_skip, "set": cmd_set, "report": cmd_report, "campaign": cmd_campaign, "log": cmd_log,
-     "intake": cmd_intake, "github": cmd_github, "team": cmd_team, "confirm": cmd_confirm, "change": cmd_change, "feedback": cmd_feedback, "me": cmd_me, "sync": cmd_sync}[a.cmd](a)
+     "intake": cmd_intake, "github": cmd_github, "team": cmd_team, "confirm": cmd_confirm, "change": cmd_change, "feedback": cmd_feedback, "me": cmd_me, "sync": cmd_sync, "install": cmd_install}[a.cmd](a)
 
 
 if __name__ == "__main__":

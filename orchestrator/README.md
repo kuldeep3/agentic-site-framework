@@ -31,7 +31,7 @@ In Claude Code, inside a project made by the starter:
 - `/asf run`: do the current stage's work up to its gate (agents in parallel where they can be; it asks you for anything only the client can provide)
 - `/asf approve G1`: record a sign-off after you confirm the manual items
 
-Nobody has to remember the commands. Two are enough for most people:
+Nobody has to remember the commands. Each person runs `bin/asf install` once, from the project folder: it adds an `asf` shortcut to their shell, so the commands work from any folder (`asf me`, `asf sync`). Two are enough for most people:
 
 - `bin/asf me`: gets the team's latest first, then shows what is waiting on you right now, with the exact command for each item, and what will come to you later. It works out who you are from this machine's git name (`bin/asf me "Name"` otherwise).
 - `bin/asf sync`: saves what you recorded (confirmations, sign-offs, feedback) and shares it with the team in one step: commit, pull, push.
